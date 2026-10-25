@@ -16,6 +16,16 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
  await page.goto(origin+'/private/workspace.html');
  await page.locator('#analyze').waitFor();
 
+ const rejectedDocuments=await page.evaluate(async()=>{
+  const {readDocument}=await import('./documents.mjs');
+  const blank=await PDFLib.PDFDocument.create();blank.addPage();
+  const many=await PDFLib.PDFDocument.create();for(let i=0;i<26;i++)many.addPage();
+  const fixtures=[new File([new Uint8Array([255])],'bad.txt'),new File(['a\0b'],'nul.csv'),new File(['%PDF-invalid'],'broken.pdf'),new File(['binary'],'private.docx'),new File([await blank.save()],'scan.pdf'),new File([await many.save()],'too-many.pdf')];
+  let rejected=0;for(const file of fixtures){try{await readDocument(file);}catch{rejected++;}}
+  return rejected;
+ });
+ assert.equal(rejectedDocuments,6,'unsupported/malformed documents must fail closed');
+ console.log('PASS six real browser document rejection cases');
  const started=Date.now();
  const ner=await page.evaluate(()=>IncognixNER.extract('Sarah Johnson works at Microsoft in London.'));
  assert(ner.some(e=>e.type==='PERSON'&&e.text.includes('Sarah')),'real NER must identify unseen synthetic name');
@@ -27,9 +37,12 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
  const doc=await PDFDocument.create();const pdfpage=doc.addPage();const font=await doc.embedFont(StandardFonts.Helvetica);
  pdfpage.drawText('Employee Nora Vale. Contact canary@example.org',{x:40,y:700,font,size:12});doc.setTitle('PRIVATE_METADATA_CANARY');
  const bytes=await doc.save();
+ await page.evaluate(()=>{window.originalFileRead=File.prototype.arrayBuffer;File.prototype.arrayBuffer=async function(){await new Promise(r=>setTimeout(r,250));return window.originalFileRead.call(this);};});
  await page.locator('#file').setInputFiles({name:'PRIVATE_FILENAME.pdf',mimeType:'application/pdf',buffer:Buffer.from(bytes)});
+ await page.locator('#draft').fill('Typing while the document loads');
  await page.locator('#document-info').filter({hasText:'Text extract only'}).waitFor().catch(async e=>{throw Error((await page.locator('#document-info').textContent())+' '+e.message);});
  assert(!(await page.locator('#document-info').textContent()).includes('PRIVATE_FILENAME'));
+ await page.evaluate(()=>{File.prototype.arrayBuffer=window.originalFileRead;delete window.originalFileRead;});
  // Chrome semantic inference is unavailable in this isolated profile. Mock only
  // that API for deterministic UI review; the worker above used actual weights.
  await page.evaluate(()=>{LocalPrivacyAI.analyze=async text=>({entities:[...text.matchAll(/Nora Vale|canary@example.org/g)].map(m=>({type:m[0].includes('@')?'EMAIL':'PERSON',start:m.index,end:m.index+m[0].length,text:m[0],necessary:false}))});});

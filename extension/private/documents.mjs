@@ -1,10 +1,12 @@
 import * as pdfjs from './vendor/pdf/pdf.mjs';
 pdfjs.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdf/pdf.worker.mjs',import.meta.url).href;
 const MAX_BYTES=8*1024*1024,MAX_TEXT=60000,MAX_PAGES=25;
-export async function readDocument(file){
+export async function readDocument(file,{signal}={}){
+ signal?.throwIfAborted();
  if(!file||file.size>MAX_BYTES)throw Error('Choose a file smaller than 8 MB.');
  const ext=file.name.split('.').pop().toLowerCase();
  const bytes=new Uint8Array(await file.arrayBuffer());
+ signal?.throwIfAborted();
  if(['txt','md','csv'].includes(ext)){
   const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
   if(text.length>MAX_TEXT||text.includes('\0'))throw Error('UTF-8 text only; maximum 60,000 characters.');
@@ -13,10 +15,16 @@ export async function readDocument(file){
  if(ext!=='pdf')throw Error('Supported: text PDF, UTF-8 TXT, Markdown and CSV. Images, scans, DOCX, audio and archives are blocked.');
  if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('Invalid PDF header.');
  const task=pdfjs.getDocument({data:bytes,isEvalSupported:false,enableXfa:false,disableAutoFetch:true,disableStream:true,useSystemFonts:false,cMapUrl:new URL('./vendor/pdf/cmaps/',import.meta.url).href,cMapPacked:true,standardFontDataUrl:new URL('./vendor/pdf/standard_fonts/',import.meta.url).href,wasmUrl:new URL('./vendor/pdf/wasm/',import.meta.url).href,maxImageSize:16_000_000,verbosity:0});
- task.onPassword=()=>{task.destroy();};
- let timer;
+ let timer,rejectStop;
+ const stopped=new Promise((_,reject)=>{rejectStop=reject;});
+ task.onPassword=()=>rejectStop(Error('Encrypted PDF blocked.'));
+ const abort=()=>rejectStop(Error('Document reading cancelled.'));
+ signal?.addEventListener('abort',abort,{once:true});
+ if(signal?.aborted)abort();
  try{
-  const document=await Promise.race([task.promise,new Promise((_,reject)=>{timer=setTimeout(()=>{reject(Error('PDF parsing timed out.'));task.destroy();},20000);})]);
+  timer=setTimeout(()=>rejectStop(Error('PDF parsing timed out.')),20000);
+  const extraction=(async()=>{
+  const document=await task.promise;
   if(document.numPages>MAX_PAGES)throw Error('PDF limit: 25 pages.');
   const pages=[];let chars=0;
   for(let n=1;n<=document.numPages;n++){
@@ -29,8 +37,10 @@ export async function readDocument(file){
   // We create new text, not an edited original. No original objects, pixels,
   // metadata, annotations, files, links or hidden attachments are exported.
   return {text:pages.join('\n\n'),pages:document.numPages,notice:'Text extract only: images, layout, links, forms, annotations and metadata are discarded. This is not a redacted copy of the original PDF.'};
- }catch(e){throw Error(e.message==='PDF parsing timed out.'?e.message:'PDF could not be safely extracted. Encrypted, scanned, malformed or over-limit files are blocked.');}
- finally{clearTimeout(timer);await task.destroy();}
+  })();
+  return await Promise.race([extraction,stopped]);
+ }catch(e){throw Error(['PDF parsing timed out.','Document reading cancelled.'].includes(e.message)?e.message:'PDF could not be safely extracted. Encrypted, scanned, malformed or over-limit files are blocked.');}
+ finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);await task.destroy();}
 }
 export async function createTextPDF(text){
  if(!/^[\x09\x0A\x0D\x20-\x7E]*$/.test(text))throw Error('PDF text export currently supports Latin ASCII only. Use UTF-8 text export to preserve your language.');

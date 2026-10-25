@@ -1,23 +1,24 @@
 import {readDocument,createTextPDF,extractGeneratedPDF} from './documents.mjs';
 const $=id=>document.getElementById(id);
-let controller;let documentReading=0;
+let controller,documentController;let documentReading=0,documentJob=0;
 let session=PrivacyCore.newSession(),attachment=null,revision=0,job=0,draft=null,prepared=null,working=false,objectURL=null;
 const status=text=>{$('status').textContent=text;};
 function invalidate(){revision++;draft=null;prepared=null;$('outgoing').value='';$('choices').replaceChildren();$('reviewed').checked=false;$('preview').hidden=true;$('count').textContent='Not reviewed';buttons();}
-function buttons(){$('analyze').disabled=working||Boolean(documentReading);for(const id of ['copy','download','pdf'])$(id).disabled=!prepared||!$('reviewed').checked||working;}
+function buttons(){$('cancel').hidden=!working&&!documentReading;$('analyze').disabled=working||Boolean(documentReading);for(const id of ['copy','download','pdf'])$(id).disabled=!prepared||!$('reviewed').checked||working;}
 function busy(value){working=value;document.body.setAttribute('aria-busy',String(value));$('analyze').disabled=value;$('cancel').hidden=!value;buttons();}
-function stop(){job++;documentReading=0;controller?.abort();IncognixNER.dispose();busy(false);invalidate();status('Analysis cancelled. Nothing was shared.');}
+function stop(){job++;documentJob++;documentController?.abort();documentReading=0;controller?.abort();IncognixNER.dispose();busy(false);invalidate();status('Analysis cancelled. Nothing was shared.');}
 $('draft').addEventListener('input',invalidate);$('terms').addEventListener('input',invalidate);$('reviewed').addEventListener('change',buttons);$('cancel').onclick=stop;
 $('save-terms').onclick=async()=>{await chrome.storage.local.set({incognixTerms:$('terms').value});status('Company terms saved locally.');};
 chrome.storage.local.get('incognixTerms').then(x=>{$('terms').value=x.incognixTerms||'';}).catch(()=>{});
 $('file').onchange=async()=>{
- invalidate();attachment=null;const generation=revision;const file=$('file').files[0];if(!file)return;
+ documentController?.abort();documentController=new AbortController();
+ invalidate();attachment=null;const generation=++documentJob;const file=$('file').files[0];if(!file)return;
  documentReading=generation;buttons();$('document-info').textContent='Reading locally…';
- try{const result=await readDocument(file);if(generation!==revision)return;attachment=result;$('document-info').textContent=`${result.pages} page(s), ${result.text.length} characters. ${result.notice}`;$('remove-file').hidden=false;}
- catch(e){if(generation===revision)$('document-info').textContent=e.message;}
- finally{if(documentReading===generation)documentReading=0;buttons();$('file').value='';}
+ try{const result=await readDocument(file,{signal:documentController.signal});if(generation!==documentJob)return;attachment=result;$('document-info').textContent=`${result.pages} page(s), ${result.text.length} characters. ${result.notice}`;$('remove-file').hidden=false;}
+ catch(e){if(generation===documentJob)$('document-info').textContent=e.message;}
+ finally{if(documentReading===generation){documentReading=0;$('file').value='';}buttons();}
 };
-$('remove-file').onclick=()=>{invalidate();attachment=null;$('document-info').textContent='';$('remove-file').hidden=true;};
+$('remove-file').onclick=()=>{documentJob++;documentController?.abort();documentReading=0;invalidate();attachment=null;$('document-info').textContent='';$('remove-file').hidden=true;};
 function terms(text){const out=[];for(const value of [...new Set($('terms').value.split('\n').map(s=>s.trim()).filter(Boolean))]){if(value.length>200)throw Error('Company term limit: 200 characters per line.');for(let start=text.indexOf(value);start>=0;start=text.indexOf(value,start+value.length))out.push({start,end:start+value.length,text:value,type:'SECRET',necessary:false,reason:'Local confidential term'});}return out;}
 $('analyze').onclick=async()=>{
  if(working||documentReading)return;
@@ -67,4 +68,4 @@ $('pdf').onclick=async()=>{try{const text=approved(),generation=revision;const b
 $('restore').onclick=()=>{try{const result=PrivacyCore.restore(session,$('answer').value);$('restored').textContent=result.text;$('copy-answer').disabled=false;status(result.unresolved?'Some tokens have no mapping in this session.':'Known placeholders restored locally.');}catch(e){status(e.message);}};
 $('copy-answer').onclick=()=>navigator.clipboard.writeText($('restored').textContent).catch(()=>status('Clipboard permission unavailable. Select the restored text to copy.'));
 $('clear').onclick=()=>{stop();session=PrivacyCore.newSession();attachment=null;for(const id of ['draft','answer','outgoing'])$(id).value='';$('restored').textContent='';$('document-info').textContent='';$('remove-file').hidden=true;$('copy-answer').disabled=true;status('Private text and mappings cleared from this workspace. Saved company terms remain in local settings.');};
-window.addEventListener('pagehide',()=>{IncognixNER.dispose();if(objectURL)URL.revokeObjectURL(objectURL);});
+window.addEventListener('pagehide',()=>{documentController?.abort();controller?.abort();IncognixNER.dispose();if(objectURL)URL.revokeObjectURL(objectURL);});

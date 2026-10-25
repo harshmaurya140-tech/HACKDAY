@@ -7,3 +7,5 @@ extension/private/vendor.bundle.js
 extension/private/ner-worker.js
 extension/private/vendor/
 *.wasm
+
+.DS_Store
