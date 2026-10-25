@@ -4,6 +4,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
 (async()=>{
  const ext=process.env.INCOGNIX_EXTENSION||path.resolve('extension');
  fs.mkdirSync('artifacts',{recursive:true});
+ fs.rmSync('artifacts/browser-evidence.json',{force:true});
  const context=await chromium.launchPersistentContext('',{channel:'chromium',headless:true,args:[`--disable-extensions-except=${ext}`,`--load-extension=${ext}`]});
  try{
  const service=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker');
@@ -59,8 +60,24 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
  const ocr=await redactor.evaluate(async()=>{const {recognize}=await import('./ocr.mjs');return recognize(document.querySelector('#pages canvas'));});
  assert(ocr.text.includes('Nora')&&ocr.words.length>3,'actual local OCR must read rasterized synthetic text');
  console.log('PASS real bundled English OCR',ocr.words.length,'words');
+ await canvas.evaluate(e=>e.scrollIntoView({block:'start'}));
  const bounds=await canvas.boundingBox();
  await redactor.mouse.move(bounds.x+25,bounds.y+110);await redactor.mouse.down();await redactor.mouse.move(bounds.x+bounds.width-20,bounds.y+180);await redactor.mouse.up();
+ // Verify a partial selection survives export while pixels outside it remain.
+ await redactor.locator('#pages input[type=checkbox]').check();
+ const partialPromise=redactor.waitForEvent('download');await redactor.locator('#export').click();
+ const partialBytes=fs.readFileSync(await (await partialPromise).path());
+ const partial=await redactor.evaluate(async array=>{
+  const pdf=await import('./vendor/pdf/pdf.mjs');const task=pdf.getDocument({data:new Uint8Array(array),isEvalSupported:false});
+  try{const doc=await task.promise,p=await doc.getPage(1),v=p.getViewport({scale:1.5}),c=document.createElement('canvas');c.width=v.width;c.height=v.height;
+   await p.render({canvasContext:c.getContext('2d'),viewport:v}).promise;
+   const original=document.querySelector('#pages canvas'),b=original.getBoundingClientRect();
+   const x=Math.round(50*original.width/b.width),y=Math.round(140*original.height/b.height);
+   return {inside:[...c.getContext('2d').getImageData(x,y,1,1).data],outside:[...c.getContext('2d').getImageData(2,2,1,1).data],text:(await p.getTextContent()).items.map(x=>x.str).join('')};
+  }finally{await task.destroy();}
+ },Array.from(partialBytes));
+ assert.deepEqual(partial.inside,[0,0,0,255]);assert.deepEqual(partial.outside,[255,255,255,255]);assert.equal(partial.text,'');
+ console.log('PASS partial-region raster export preserves outside pixels and removes the text layer');
  // Also exercise a keyboard-operable full-page redaction path.
  await redactor.getByRole('button',{name:'Redact entire page'}).click();
  await redactor.locator('#pages input[type=checkbox]').check();

@@ -1,6 +1,6 @@
 """Create reproducible extension and source archives; never package local profiles."""
 from pathlib import Path
-import hashlib, json, subprocess, zipfile
+import hashlib, json, subprocess, zipfile, re
 root=Path(__file__).resolve().parent.parent
 subprocess.run(['npm','run','verify:model'],cwd=root,check=True)
 version=json.loads((root/'extension/manifest.json').read_text())['version']
@@ -13,7 +13,7 @@ def archive(name,files,base):
             info.compress_type=zipfile.ZIP_DEFLATED;info.external_attr=0o100644<<16
             z.writestr(info,path.read_bytes())
     return target
-files=[p for p in (root/'extension').rglob('*') if p.is_file() and not p.name.startswith('.')]
+files=[p for p in (root/'extension').rglob('*') if p.is_file() and not p.name.startswith('.') and not re.search(r' \d+\.',p.name)]
 extension=archive(f'incognix-{version}-extension.zip',files,root/'extension')
 # The source archive intentionally excludes downloaded assets and dependencies.
 names=subprocess.check_output(['git','ls-files','--cached','--others','--exclude-standard'],cwd=root,text=True).splitlines()
