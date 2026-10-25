@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const script=fs.readFileSync(path.join(__dirname,'../extension/content/adapters.js'),'utf8');
+const ctx={window:{},location:{hostname:'claude.ai'}};vm.createContext(ctx);vm.runInContext(script,ctx);
+const adapter=ctx.window.__privacyShieldAdapter;
+const aiLine='Phone number was not provided, so I left it out of the letter. Please review the document.';
+assert.equal(adapter.extractMessageText({innerText:aiLine+'\uE06CCreate a doc\uE056'},'assistant'),aiLine);
+assert.equal(adapter.extractMessageText({innerText:aiLine+'\nCreate a doc'},'assistant'),aiLine+'\nCreate a doc','without structural proof do not strip possible AI prose');
+assert.equal(adapter.extractMessageText({innerText:'Please create a doc with the summary.'},'assistant'),'Please create a doc with the summary.');
+console.log('PASS: private-use Claude action controls removed without changing AI-written sentences');

@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const script=fs.readFileSync(path.join(__dirname,'../extension/content/content.js'),'utf8');
+const adapter=fs.readFileSync(path.join(__dirname,'../extension/content/adapters.js'),'utf8');
+assert(script.includes('const text=adapter.extractMessageText(node,role);'), 'message capture must use page-UI cleaner');
+assert(!script.includes("const text=(node.innerText||node.textContent||'').trim();"), 'raw innerText must not bypass cleanup');
+assert(script.includes('if(priorId)')&&script.includes('text!==texts.get(priorId)'), 'same cleaned representation used for streamed updates');
+assert(adapter.includes("if(data.id!=='claude'||role!=='assistant'||!text)return text;"), 'cleanup scoped to assistant replies on Claude');
+console.log('PASS: cleaned source feeds initial and streaming restoration; other sites unchanged');

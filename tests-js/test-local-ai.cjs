@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const detector=require('../extension/private/local-ai.js');
+const sample='Mail me at test@example.net or test@example.net';
+const es=detector.findSpans(sample,{value:'test@example.net',type:'EMAIL',necessary:false});
+assert.equal(es.length,2);
+assert.equal(es[0].start,sample.indexOf('test@example.net'));
+assert.equal(es[1].start,sample.lastIndexOf('test@example.net'));
+assert.equal(detector.findSpans(sample,{value:'hallucinated@example.net',type:'EMAIL'}).length,0);
+assert.equal(detector.unwrapJSON('```json\n{"entities":[]}\n```').entities.length,0);
+assert.throws(()=>detector.unwrapJSON('not JSON'),/not structured JSON/);
+console.log('PASS: local model output parsing and verbatim-only span acceptance');

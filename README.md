@@ -1,121 +1,81 @@
-# AI Privacy Shield — Chrome Extension Prototype
+# Incognix v0.7.1 — browser-only development build
 
-**Three-platform design:** ChatGPT, Claude, and Gemini adapters are included. This is a pre-release prototype. Its integrations are **not yet validated in the user's logged-in browser**; website UI changes may break one or more adapters.
+**Product rename:** Previously known as AI Privacy Shield. The project now ships under the name **Incognix**. GitHub repository ownership/name (`harshmaurya140-tech/HACKDAY`) is unchanged.
 
-## Core behavior
 
-1. An extension-origin iframe sits over the normal composer on supported AI sites. Type **only in this protected composer**.
-2. Clicking Send / pressing Enter runs local Python detection and a conservative necessity classifier.
-3. Unnecessary detected details are replaced with session-specific placeholders **without showing a popup**.
-4. If exact values appear relevant, the user chooses to hide, share a reduced value, or disclose exactly. No exact values are auto-released.
-5. The approved text is inserted into the site's original composer and the site's normal Send control is activated.
-6. Responses containing known placeholders are restored by a local Python service and displayed in **extension-origin iframe**, not in the AI site's DOM.
+For end-user installation steps and the **Protection on/off** toggle, see [INSTALLATION.md](INSTALLATION.md). OFF now completely hides the extension composer and reveals the real AI input, leaving just a small extension-owned re-enable switch above it. ON restores the protected composer. The private composer matches current host-site styling using computed CSS tokens, and no longer displays the Incognix heading or diamond. The GLiNER2 runtime code is present but not active without the model/compiled runtime assets; Chrome on-device AI remains the working interim model on eligible devices. This is not yet a security-audited production release.
 
-The local classifier **never answers the task**: ChatGPT, Claude, or Gemini does. The project deliberately **does not calculate age** or income tax locally. It might extract a DOB's birth year only if the user explicitly authorizes that reduced disclosure.
+# Incognix 0.6.3
 
-## Files
+**Chrome-only test build:** fixes Gemini disclosure panel scrolling and keeps approval buttons visible. Users do not need Python/Ollama. Model inference and all-platform privacy guarantees are not fully validated. Only test with fictional data.
 
-- `extension/manifest.json`: Chrome MV3, limited to three AI domains and localhost.
-- `extension/content/adapters.js`: three platform-specific composer/response selectors.
-- `extension/content/content.js`: page integration, sanitized submission, private overlays.
-- `extension/private/`: extension-owned composer, review UI, and restored response UI.
-- `extension/background.js`: trusted bridge to local Python engine.
-- `backend/engine.py`: PII detection, conservative necessity classification, dictionaries and restoration.
-- `backend/main.py`: authenticated local FastAPI service.
-- `tests/`: regression tests using **synthetic** examples only.
+## Installation
 
-## What access is needed
+1. Extract the extension-only ZIP.
+2. Open `chrome://extensions`, enable Developer mode, and load the extracted `incognix/extension/` folder. For upgrades, replace your previously installed `extension` folder and press Reload.
+3. Refresh ChatGPT, Gemini, and Claude. Start a **new chat** to test.
+4. On Gemini, when disclosures are listed, scroll *inside the choice list*. The **Approve & send** and **Cancel** buttons remain below it.
 
-**No account passwords, session cookies, API keys, or real personal documents.** You install the unpacked extension yourself in Chrome and run Python locally. Test on your logged-in AI tabs using **synthetic** identifiers. The extension needs limited page access to the three sites to interact with the composers and visible responses.
+## Validation
 
-## 1. Prepare Python
+Run `npm test` from the source root to run the JavaScript suites. Developers with Playwright's Python package and Chromium installed can run `python tests-ui/test_gemini_consent_viewport.py` for a local synthetic UI layout check.
 
-From the project root:
+## Status and limitations
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate          # Windows PowerShell: .venv\\Scripts\\Activate.ps1
-pip install -r requirements.txt
-python -m backend.main
+The GLiNER2 browser code remains incomplete as a runtime product: no large model weights/tokenizer/runtime are bundled, and arbitrary-text accuracy has not been verified. Chrome's on-device AI is still used where available. Never use this alpha to process authentic private data. A visual rendering test does **not** establish that raw identifiers stay off the network in live websites.
+
+---
+
+# Incognix v0.6.1 — Cross-platform response layout test build
+
+A browser-only Chrome Manifest V3 extension that **aims** to reduce disclosure of private identifiers when sending prompts to ChatGPT, Claude and Gemini. It uses an extension-origin private composer, browser-local AI classification, per-conversation placeholders, optional user consent for materially necessary fields, and local restoration in extension-owned response frames.
+
+**Privacy note:** This is **not a verified security product**. It can miss identifying information; models and changing website interfaces can fail. Use synthetic test data only.
+
+## Install (end-user runtime)
+Extract the package, open `chrome://extensions`, enable Developer Mode, choose **Load unpacked**, and select the `extension` directory. It does not need Python, pip, Ollama, a desktop helper, a local server, or a cloud API key. Chrome's on-device Prompt API is required and may download its model on first use; eligible Chrome/hardware configuration is required. If it cannot run, protected Send blocks.
+
+## What actually runs
+- **PII detection:** Chrome on-device Prompt API with generic format-validation safeguards.
+- **Necessity assessment:** a separate Chrome on-device Prompt API step with stable integer candidate IDs. This classifier never answers the task. Missing or contradictory decisions default to hiding the corresponding field.
+- **Identifier protection:** standard account/credential families are not exposed via the disclosure UI. Other values are disclosed only with user approval when necessity is strongly indicated.
+- **Pseudonymization:** JavaScript Maps serialized into extension-only `chrome.storage.session` and scoped to a conversation/browser tab.
+- **Display:** a separate extension-origin iframe restores exact known placeholder tokens without writing the originals back into host-controlled DOM.
+
+## What's fixed in v0.6.1
+- ChatGPT: select the real conversation composer rather than an interactive Writing/document editor. Keep the protected editor attached as document editors appear and disappear during streaming.
+- ChatGPT: mount restored answers *after the conversation turn*, outside embedded Writing cards, with appropriate content width.
+- Gemini: select `model-response` messages but extract only their Markdown/response-body subtrees, excluding "You said", "Gemini said", controls and echoed user text.
+- Gemini: preserve line breaks, lists, and paragraphs from the sanitized response DOM while reconstructing the private answer.
+- All sites: restore assistant content in a naturally sized frame so long answers scroll with the webpage instead of being cut off behind the native composer.
+- New GLiNER2 asset gate: `npm run verify:model` fails unless the model, tokenizer and compiled ONNX runtime are truly present.
+
+## GLiNER2 status
+GLiNER2 browser ONNX pipeline scaffolding and mock-tested decoding live in `extension/core` and `extension/private/gliner2-runtime.js`, but the actual model weights, tokenizer and WASM/WebGPU inference runtime are **not included**. `extension/private/vendor.bundle.js` is an explicit placeholder. This means **GLiNER2 is not active and this is not the finished product**. A complete tested packaging procedure, including Web Store policy review, remains a required release gate.
+
+## Developer tests (not required for users)
 ```
-
-The service binds only to `127.0.0.1:8765` and prints a fresh **pairing code**. It will not work when running Python on a remote/cloud machine, since private text must remain local.
-
-## 2. Install Chrome extension
-
-1. Visit `chrome://extensions`.
-2. Enable **Developer mode**.
-3. Click **Load unpacked** and select the `extension/` folder.
-4. Visit `https://chatgpt.com`, `https://claude.ai`, or `https://gemini.google.com` and reload.
-5. Locate the **Privacy Shield** replacement composer. Enter the one-time pairing code printed by Python.
-6. Use **synthetic** prompt data and test a round trip. If the composer does not appear, the website's DOM may have changed (see troubleshooting).
-
-The local service's pairing state is in memory. After restarting Python, use the newly printed pairing code again.
-
-## 3. Local AI enhancements
-
-The base prototype includes regex and context-based detectors, enough for synthetic demo prompts containing explicit patterns and `my name is John Smith`. These alone do **not** provide reliable general-language name recognition.
-
-**Optional offline-capable open-weight NER:**
-
-```bash
-pip install -r requirements-ml.txt
-export ENABLE_GLINER=1
-python -m backend.main
+node --version
+npm test
 ```
+39 mock/regression suites passed for v0.6.1. Testing on the real logged-in sites, privacy network inspection, and model accuracy benchmarking are pending.
 
-By default this attempts `fastino/gliner2-privacy-filter-PII-multi`; model weights must be downloaded once. The model's available languages do not establish Hindi/Marathi support. Due to model/framework versions, confirm span extraction manually against the installed GLiNER2 output before relying on it. The engine fails closed to regex detection if the model is unavailable; it does **not** claim the optional model is active merely because the environment variable was enabled.
+## Threat boundary
+Original values are visible to your local Chrome browser and trusted extension code. Pseudonymization does not guarantee anonymity. Never use this test release for banking, medical, legal or other confidential content.
 
-**Optional local necessity model via Ollama:** install [Ollama](https://ollama.com), then:
+See `RELEASE_NOTES.md` for the implemented fixes and outstanding limitations.
 
-```bash
-ollama pull qwen3:1.7b
-export ENABLE_OLLAMA=1
-python -m backend.main
-```
+## Release blocker (must not be ignored)
+The GLiNER2 weights (~614 MB), tokenizer, ONNX Runtime Web bundle and WASM runtime are **not** in these development ZIPs; network access from the build container was unavailable. Thus **GLiNER2 is NOT ACTIVE** in this package. The project provides a browser inference path and a developer-side build procedure, but its exact ONNX model output has not yet been tested against real local inputs. The existing Chrome Prompt API remains the interim detector. Do not call this a production release or use real personal identifiers in testing.
 
-Ollama is called **only on `127.0.0.1`**; it returns suggested IDs of potentially necessary fields. Its suggestions cannot authorize disclosure. Deterministic rules continue to operate if Ollama is missing.
+The **developer**, not the end user, must run `npm install`, `npm run build:model:complete` with internet access, then verify actual inference/parity in Chrome before shipping a model-equipped extension. The user installs **only** the resulting extension, with model resources already included. The model asset check checks size/existence, not model accuracy.
 
-## 4. Run tests
+Current authorized target models: ChatGPT, Claude, Gemini. Their logged-in production DOM compatibility still requires live verification after this fix.
 
-```bash
-python -m pytest tests -q
-```
+## Gemini formatted response restoration (v0.6.3)
 
-If pytest is unavailable: `pip install pytest`. JavaScript syntax checks: `node --check extension/background.js` and similar for other `.js` files.
+Gemini reply formatting is preserved by serializing its **sanitized** assistant Markdown body into a limited structural tree (headings, paragraphs, lists, emphasis, code, tables, and safe links). The MV3 service worker substitutes only known private placeholder tokens inside that tree; the extension-origin frame then recreates inert DOM elements via `createElement` and `createTextNode`. The website receives no restored originals. Untrusted site HTML, CSS, event handlers and arbitrary attributes are never copied into the extension.
 
-## Current scope and limitations
+This addresses the previous plain-text rendering bug that produced stray bullet dots, uneven spacing, flattened code, and lost headings. The fallback for changed Gemini DOM markup remains a plain-text view. Changes require live verification in Chrome on `gemini.google.com` before release.
 
-- **Included adapters for all three platforms, not yet verified on logged-in sites.** We intentionally do not claim all adapters are operational until tested in Chrome. The selectors are maintained separately for quick fixes.
-- **Text-only MVP.** Does not protect file attachments, voice input, camera data, browsing, AI tools, or private information already present in prior chat history.
-- **Native shortcuts / site rerenders can bypass protection.** The replaced composer is protected only while the extension shows its own iframe and indicates that the local engine is active. If the site replaces the form, the extension may need to reconnect; stop typing until the protected composer reappears.
-- A malicious/compromised website or extension may try to interfere with UI; cross-origin iframes make casual DOM reads harder but cannot promise complete security.
-- Incorrect detections and contextual re-identification are possible. This product minimizes unnecessary exposure; it does not guarantee anonymity.
-- Restored text is displayed as **plain text** in a protected iframe, not a perfect reconstruction of Markdown/artifacts. Initial response restoration occurs after the output appears stable, not guaranteed in realtime.
-- Backend uses **in-memory dictionaries only** and cannot recover them after restart. Reset a chat or re-pair after restarting Python.
-- The local engine needs to be started before using the extension. Native Messaging + installer is a later packaging milestone.
-- Chrome and website behavior changes could prevent composer placement, programmatic sending, or message observation. Never blindly fall back to raw input.
-- Product should not be presented as audited or ready for sensitive production data.
-
-## Testing each platform
-
-For each of ChatGPT, Claude and Gemini, verify:
-
-1. The real account is logged in and a **protected** composer is visible.
-2. On typing a synthetic original string, the host page DOM **does not** contain the original raw prompt.
-3. Enter and Send initiate local analysis.
-4. The host chat displays sanitized placeholders when the message is sent.
-5. A synthetic assistant reply containing placeholders is restored inside the private response iframe.
-6. DOB exact-age task prompts for disclosure; ordinary bank complaint does not.
-7. Restarting Python or navigating to unsupported pages never sends raw data.
-8. If site selectors fail, record the page's HTML element information **without sharing real private messages**, then update the relevant adapter.
-
-## Security decisions
-
-- No remote API keys or cloud PII detection.
-- One-time terminal pairing code, random bearer token, `127.0.0.1` binding, origin checks, and session validation.
-- Raw prompts are passed directly from extension-origin iframe to service worker to local Python. Content scripts see **only sanitized text**.
-- Restoration returns to the extension-origin iframe; content scripts do not receive restored text.
-- No telemetry or request-body logging in this prototype.
-- `chrome.storage.local` contains only the local service bearer token; no original dictionaries.
-- Pairing and authorization are a prototype control, not a formal security audit. On a production release prefer Chrome Native Messaging and signed packaging.
+This remains a browser-local development build: **GLiNER2 model weights/runtime are not bundled or verified as active**, and privacy leakage testing on authenticated AI sites is not complete. Use synthetic inputs.

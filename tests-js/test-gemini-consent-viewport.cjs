@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const css=fs.readFileSync(__dirname+'/../extension/private/frame.css','utf8');
+const page=fs.readFileSync(__dirname+'/../extension/private/frame.js','utf8');
+const content=fs.readFileSync(__dirname+'/../extension/content/content.js','utf8');
+assert.match(css,/#composer\{\s*display:flex;\s*flex-direction:column;/,'root is flex and bounded');
+assert.match(css,/max-height:var\(--ps-frame-available-height/,'root respects host-provided budget');
+assert.match(css,/#permission:not\(\[hidden\]\)\{[\s\S]*?display:flex;[\s\S]*?min-height:0/,'permission content shrinks');
+assert.match(css,/#permission #choices\{[\s\S]*?flex:1 1 auto;[\s\S]*?overflow-y:auto/,'only the choice list scrolls');
+assert.match(css,/#permission>\.toolbar\{[\s\S]*?flex-shrink:0|#permission>\.permission-title,#permission>p,#permission>\.toolbar\{\s*flex-shrink:0/,'approval bar stays visible');
+assert.match(content,/window\.innerHeight-\(frameRect\?\.top\?\?0\)-14/,'budget is measured from iframe screen position');
+assert.match(content,/appliedHeight:height/,'applied budget reaches the private frame');
+assert.match(page,/--ps-frame-available-height/,'private frame applies budget');
+assert.match(content,/PRIVACY_SHIELD_FRAME_BUDGET/,'parent reacts to viewport resize');
+console.log('PASS: Gemini tall consent form stays within viewport; choices scroll and approval remains visible');

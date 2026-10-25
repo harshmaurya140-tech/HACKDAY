@@ -1,0 +1,167 @@
+:root{color-scheme:light;--ps-bg:#fff;--ps-text:#172638;--ps-border:#b9cdd1;--ps-muted:#64748b;--ps-soft:#f6f9fa;--ps-field:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.45;font-size:13px}
+:root[data-privacy-theme=dark]{color-scheme:dark;--ps-bg:#2b2b2d;--ps-text:#f1f1f1;--ps-border:#55565a;--ps-muted:#c3c3c9;--ps-soft:#38383c;--ps-field:#303035}
+*{box-sizing:border-box}html,body{margin:0;min-height:40px;background:transparent;color:var(--ps-text)}main{background:var(--ps-bg);border:1px solid var(--ps-border);border-radius:15px;box-shadow:0 4px 24px #13263c17;overflow:hidden;padding:11px 13px;min-width:230px}main[hidden],section[hidden],div[hidden]{display:none!important}
+.top{display:flex;align-items:center;gap:7px;margin-bottom:8px}.shield{font-size:20px;font-weight:900;color:#237a60}.status{margin-left:auto;font-size:11px;color:var(--ps-muted)}.status.error{color:#ba2c36}.status.ok{color:#237a60}
+textarea{font:inherit;display:block;width:100%;border:0;resize:vertical;outline:0;line-height:1.4;min-height:54px;max-height:260px;background:var(--ps-field);color:var(--ps-text);white-space:pre-wrap}
+.toolbar{display:flex;gap:8px;justify-content:flex-end;align-items:center}.bottom{margin-top:7px}.notice{font-size:10.5px;color:var(--ps-muted);margin-right:auto}button{border:0;border-radius:9px;background:#1d7359;color:#fff;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:650}button:disabled{opacity:.5;cursor:not-allowed}button.secondary{background:#edf4f6;color:#244257}.link{font-size:10.5px;padding:4px;background:transparent;color:#627485;text-decoration:underline}.foot{display:flex;justify-content:space-between;gap:8px;margin-top:8px}.pairing{background:var(--ps-soft);border:1px solid var(--ps-border);border-radius:8px;padding:8px;margin-bottom:10px}.pairing p{font-size:11px;margin:0 0 8px}input,select{font:inherit;border:1px solid #b3c9d0;border-radius:7px;padding:7px;background:var(--ps-field);color:var(--ps-text);min-width:0}input{flex:1}
+#permission{margin-top:10px;border-top:1px solid var(--ps-border);padding-top:10px}.permission-title{font-weight:700;color:#8c501c}#permission p{color:#576979;font-size:11.5px;margin:5px 0 10px}.choice{border:1px solid var(--ps-border);border-radius:8px;padding:8px;margin:6px 0}.choice-header{display:flex;justify-content:space-between;gap:8px;font-size:12px}.choice small{display:block;color:#64748b;overflow-wrap:anywhere}.choice-controls{display:flex;gap:7px;align-items:center;margin-top:6px}.choice-controls select{flex:1}.range{display:flex;gap:5px;margin-top:7px}.range input{width:50%}
+/* Restored replies intentionally look like regular chat, not a huge white card. */
+#response{background:transparent;border:0;box-shadow:none;border-radius:0;padding:5px 1px;min-width:0}
+.response-label{font-size:10px;font-weight:650;color:#277e65;margin-bottom:8px}
+:root[data-privacy-theme=dark] .response-label{color:#8bd8b6}
+.restored{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-size:14px;max-height:min(350px,calc(var(--ps-parent-vh, 800px) * .38));overflow:auto;scrollbar-width:thin;overscroll-behavior:contain;color:var(--ps-text)}
+.restored.expanded{max-height:min(400px,calc(var(--ps-parent-vh, 800px) * .42))}
+:root[data-privacy-site=claude][data-privacy-role=assistant] .restored{font-family:Georgia,ui-serif,serif;font-size:16px;line-height:1.7}
+.response-actions{display:flex;justify-content:flex-end;margin-top:5px}
+.response-toggle{background:transparent;color:#25775f;padding:3px 5px;font-size:11px;border:0;text-decoration:underline}
+:root[data-privacy-theme=dark] .response-toggle{color:#8bd8b6}
+
+
+/* Prevent restored content from overlapping the site-fixed composer while scrolling. */
+#response{position:relative;isolation:isolate;max-width:100%;contain:layout style}
+#response .restored{min-height:0;max-width:100%;touch-action:pan-y}
+
+/* Release-hardening: keep consent controls accessible with many detected fields.
+ * The extension frame is bounded by the browser viewport; only the choices
+ * list scrolls, never the Apply/Cancel controls. */
+.top{flex-wrap:wrap;align-items:flex-start}
+.top .status{margin-left:auto;max-width:75%;overflow-wrap:anywhere;text-align:right;line-height:1.45}
+#permission{min-height:0}
+#choices{max-height:min(340px,calc(var(--ps-parent-vh, 800px) * .37));overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-right:3px}
+#permission>.toolbar{position:sticky;bottom:0;padding-top:8px;background:var(--ps-bg);z-index:1}
+#composer{max-width:100%}
+@media(max-width:480px){.top .status{max-width:100%;margin-left:0;text-align:left}.foot{flex-wrap:wrap}.choice-controls{flex-wrap:wrap}.choice-controls select{min-width:100%}}
+
+/* v0.6.1: assistant answers use the page's normal scrolling. Do not trap
+ * long documents in a 430px iframe beneath a pinned site composer. */
+:root[data-privacy-role="assistant"] .restored{max-height:none;overflow:visible}
+:root[data-privacy-role="user"] .restored{max-height:min(360px,calc(var(--ps-parent-vh,800px) * .45));overflow:auto}
+:root[data-privacy-site="chatgpt"][data-privacy-role="user"] #response{background:#204780;color:#fff;border-radius:15px;padding:12px}
+:root[data-privacy-site="chatgpt"][data-privacy-role="user"] .restored{color:#fff;font-family:Inter,system-ui,sans-serif}
+:root[data-privacy-site="gemini"] .restored{font-family:Inter,system-ui,sans-serif;line-height:1.7}
+
+
+/* v0.6.2: a tall permission list must never push its approval buttons outside
+ * the host webpage's available vertical space (notably Gemini's centered input).
+ * The host content script provides the actual available frame height.
+ */
+#composer{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  max-height:var(--ps-frame-available-height, calc(var(--ps-parent-vh, 800px) - 24px));
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+}
+#composer>.top,#composer>.toolbar,#composer>.foot,#composer>.pairing,#composer>textarea{
+  flex-shrink:0;
+}
+#composer:has(#permission:not([hidden]))>textarea{
+  min-height:48px;
+  max-height:72px;
+  resize:none;
+}
+#permission:not([hidden]){
+  display:flex;
+  flex-direction:column;
+  flex:1 1 auto;
+  min-height:0;
+  overflow:hidden;
+}
+#permission>.permission-title,#permission>p,#permission>.toolbar{
+  flex-shrink:0;
+}
+#permission #choices{
+  flex:1 1 auto;
+  min-height:0;
+  max-height:none;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  padding-bottom:6px;
+}
+#permission>.toolbar{
+  position:relative;
+  bottom:auto;
+  z-index:2;
+  background:var(--ps-bg);
+  border-top:1px solid var(--ps-border);
+  padding:9px 0 2px;
+}
+#composer>.bottom,#composer>.foot{flex-shrink:0}
+
+/* v0.6.3: Gemini's assistant reply keeps the Markdown structure it actually
+ * rendered, instead of generating stray bullet characters from plain text.
+ * All nodes and text are created inside the extension-origin frame. */
+:root[data-privacy-site="gemini"] .restored.rich{
+  white-space:normal;
+  line-height:1.65;
+  font-size:14px;
+  overflow-wrap:anywhere;
+}
+.restored.rich > :first-child{margin-top:0}
+.restored.rich > :last-child{margin-bottom:0}
+.restored.rich p{margin:.65em 0}
+.restored.rich h1,.restored.rich h2,.restored.rich h3,
+.restored.rich h4,.restored.rich h5,.restored.rich h6{
+  margin:1.15em 0 .45em;
+  line-height:1.35;
+  font-weight:700;
+}
+.restored.rich h1{font-size:1.45em}
+.restored.rich h2{font-size:1.25em}
+.restored.rich h3{font-size:1.1em}
+.restored.rich ul,.restored.rich ol{display:block;list-style-position:outside;margin:.55em 0 .75em;padding-left:1.65em}
+.restored.rich ul{list-style-type:disc}
+.restored.rich ol{list-style-type:decimal}
+.restored.rich li{display:list-item;margin:.18em 0;padding-left:.12em}
+.restored.rich li > p{margin:.16em 0}
+.restored.rich li > ul,.restored.rich li > ol{margin:.3em 0}
+.restored.rich strong,.restored.rich b{font-weight:700}
+.restored.rich em,.restored.rich i{font-style:italic}
+.restored.rich pre{white-space:pre-wrap;overflow-x:auto;tab-size:2;border-radius:9px;padding:12px;background:var(--ps-soft);margin:.8em 0}
+.restored.rich code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.93em}
+.restored.rich :not(pre)>code{padding:.12em .25em;border-radius:4px;background:var(--ps-soft)}
+.restored.rich blockquote{margin:.8em 0;padding:.25em 1em;border-left:3px solid var(--ps-border)}
+.restored.rich table{width:100%;border-collapse:collapse;display:block;overflow-x:auto;margin:.8em 0}
+.restored.rich td,.restored.rich th{border-bottom:1px solid var(--ps-border);padding:7px 10px;text-align:left}
+.restored.rich a{color:#67b9df;overflow-wrap:anywhere}
+.restored.rich hr{border:0;border-top:1px solid var(--ps-border);margin:1em 0}
+
+
+/* v0.7.0: host-adaptive composer. Only style tokens sampled from the current
+   website are used; no platform-specific colors, logos, or hardcoded palettes. */
+:root[data-privacy-role="assistant"]{--ps-radius:14px}
+#composer{background:var(--ps-host-bg,var(--ps-bg));color:var(--ps-host-text,var(--ps-text));border-color:var(--ps-host-border,var(--ps-border));border-radius:var(--ps-host-radius,16px);font-family:var(--ps-host-font,Inter,system-ui,sans-serif);box-shadow:none;padding:10px 12px}
+#composer textarea{font-family:inherit;background:var(--ps-host-field,transparent);color:inherit;border-radius:8px;resize:vertical;max-height:260px;padding:8px 4px}
+#composer .top{gap:10px;margin-bottom:6px;align-items:center}
+#composer .status{font-weight:450;font-size:11px;max-width:58%;opacity:.85}
+#composer .bottom #send,#composer #approve{background:var(--ps-host-accent,#237a60);color:var(--ps-host-accent-text,#fff)}
+#composer .foot .link{color:var(--ps-host-muted,var(--ps-muted));text-decoration:none}
+#composer .foot .link:hover{text-decoration:underline}
+#composer .notice{color:var(--ps-host-muted,var(--ps-muted))}
+.protection-switch{display:inline-flex;align-items:center;gap:8px;flex-shrink:0;border:0;border-radius:999px;padding:5px 6px;background:transparent;color:inherit;font-size:11.5px;font-weight:600;line-height:1.25;font-family:inherit;white-space:nowrap}
+.protection-switch:focus-visible{outline:2px solid var(--ps-host-text,var(--ps-text));outline-offset:2px}
+.protection-switch .switch-track{width:30px;height:18px;border-radius:999px;background:#268568;position:relative;display:inline-flex;align-items:center;transition:background .15s}
+.protection-switch .switch-thumb{width:12px;height:12px;border-radius:100%;background:#fff;position:absolute;left:15px;transition:left .15s;box-shadow:0 1px 2px #0004}
+.protection-switch[aria-checked="false"] .switch-track{background:#777b83}
+.protection-switch[aria-checked="false"] .switch-thumb{left:3px}
+.protection-switch:hover{background:var(--ps-soft)}
+#composer[data-protection="off"]{padding:8px 12px;max-height:100px;overflow:hidden}
+#composer[data-protection="off"] textarea,
+#composer[data-protection="off"] #permission,
+#composer[data-protection="off"] #native-recovery,
+#composer[data-protection="off"] .bottom,
+#composer[data-protection="off"] .foot,
+#composer[data-protection="off"] .pairing{display:none!important}
+#composer[data-protection="off"] .top{margin:0}
+#composer[data-protection="off"] .status{font-size:10.5px}
+#response .response-label{display:none!important}
+
+/* v0.7.1: when protection is OFF, the entire extension composer iframe is
+ * removed from view. Only this small extension-origin re-enable switch is
+ * shown above the site's fully functional native search field. */
+#off-toggle{box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-width:0;width:100%;height:38px;border:1px solid var(--ps-host-border,var(--ps-border));border-radius:999px;padding:2px 5px;background:var(--ps-host-bg,var(--ps-bg));color:var(--ps-host-text,var(--ps-text));font-family:var(--ps-host-font,inherit);box-shadow:0 2px 9px #0002}
+#off-toggle .protection-switch{justify-content:center;padding:5px 4px;width:100%;font-size:11px}
+#off-toggle .protection-switch[aria-checked="false"] .switch-track{background:#777b83}

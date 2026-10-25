@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const dir=path.join(__dirname,'../extension');
+const content=fs.readFileSync(path.join(dir,'content/content.js'),'utf8');
+const css=fs.readFileSync(path.join(dir,'private/frame.css'),'utf8');
+const ui=fs.readFileSync(path.join(dir,'private/frame.js'),'utf8');
+assert.match(content,/maxResponseHeight=24000/,'allow answers to scroll in the page instead of a nested 430px pane');
+assert.doesNotMatch(content,/Math\.min\(1050/,'oversized 1050px response should be removed');
+assert.match(css,/\[data-privacy-role=\"assistant\"\] \.restored\{max-height:none;overflow:visible\}/,'assistant response flows fully inside page');
+assert.match(css,/--ps-parent-vh/,'response height must use parent viewport dimensions');
+assert.match(ui,/toggle\.hidden=true/,'do not render duplicate Show more/Show less buttons');
+assert.match(content,/z-index:1;/,'avoid unnecessarily high stacking response frames');
+console.log('PASS: full-height assistant response uses page scroll, no competing toggles, controlled z-index');
