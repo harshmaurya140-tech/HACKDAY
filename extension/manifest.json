@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "Incognix",
+  "version": "0.7.1",
+  "description": "Browser-only private prompting for ChatGPT, Claude and Gemini, with a reversible per-chat protection toggle and local-only analysis.",
+  "minimum_chrome_version": "138",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://claude.ai/*",
+    "https://gemini.google.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "content/adapters.js",
+        "content/session-navigation.js",
+        "content/native-draft.js",
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "private/frame.html",
+        "private/frame.js",
+        "private/frame.css",
+        "private/local-ai.js",
+        "private/gliner2-runtime.js",
+        "private/vendor.bundle.js",
+        "core/gliner2-multi.js",
+        "core/rich-response.js"
+      ],
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*"
+      ]
+    }
+  ],
+  "action": {
+    "default_title": "Incognix — toggle protection in chat"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}

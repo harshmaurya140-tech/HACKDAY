@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+</style></head><body>
+<div class="font-claude-response" id="fixture">
+  <span class="sr-only">Claude responded: Hi Mira, I've written the letter for your bank and will help with the next steps rathe…</span>
+  <section class="prose"><p>Hi Mira, I’ve written the letter for your bank and will help with the next steps rather than inventing details.</p><p>Dear Sir/Madam,</p><p>Please review the disputed transaction.</p></section>
+  <div role="toolbar"><button type="button">Create a doc</button></div>
+  <time>just now</time>
+</div>
+<pre id="test-result"></pre>
+<script src="../../extension/content/adapters.js"></script>
+<script>
+const text=window.__privacyShieldAdapter.extractMessageText(document.querySelector('#fixture'),'assistant');
+document.querySelector('#test-result').textContent=JSON.stringify({text,hasPreface:text.includes('Claude responded:'),hasCTA:text.includes('Create a doc'),hasTime:text.includes('just now')});
+</script>
+</body></html>

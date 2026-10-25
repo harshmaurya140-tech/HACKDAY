@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const ext=path.resolve(__dirname,'../extension');
+const manifest=JSON.parse(fs.readFileSync(path.join(ext,'manifest.json'),'utf8'));
+assert(!manifest.host_permissions.some(x=>/127\.0\.0\.1|localhost/.test(x)));
+assert.equal(manifest.version,'0.7.1');
+const background=fs.readFileSync(path.join(ext,'background.js'),'utf8');
+assert(!/fetch\(|http:\/\/|https:\/\//.test(background),'background must not call out to a server');
+assert.match(background,/chrome\.storage\.session/,'store mappings in extension-only ephemeral storage');
+const frame=fs.readFileSync(path.join(ext,'private/frame.js'),'utf8');
+assert.match(frame,/LocalPrivacyAI\.analyze\(text,\{onStatus:/);
+assert.doesNotMatch(frame,/type:\s*'PAIR'/,'no backend pairing permitted');
+const content=fs.readFileSync(path.join(ext,'content/content.js'),'utf8');
+assert.match(content,/f\.allow='language-model'/);
+const html=fs.readFileSync(path.join(ext,'private/frame.html'),'utf8');
+assert.match(html,/local-ai\.js/);
+console.log('PASS: no Python, localhost or backend runtime dependency in extension');

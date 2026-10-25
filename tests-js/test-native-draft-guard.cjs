@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const guard=require('../extension/content/native-draft.js').create();
+const input={id:'the-editor'},other={id:'another-editor'};
+const bridge='first-conversation',another='second-conversation';
+const a='Hello [PRIVATE_PERSON_1_FFFFFF]';
+const b='Hello [PRIVATE_PERSON_2_AAAAAA]';
+assert.equal(guard.mayReplace(input,bridge,'',a),true);
+assert.equal(guard.mayReplace(input,bridge,'Unrelated user draft',a),false,'never overwrite unrelated native draft');
+guard.note(input,bridge,a);
+assert.equal(guard.owns(input,bridge,a),true);
+assert.equal(guard.mayReplace(input,bridge,a,b),true,'retry may replace only its own previously staged prompt');
+assert.equal(guard.mayReplace(input,bridge,a.replace('Hello','Hi'),b),false,'never replace modified native text');
+assert.equal(guard.mayReplace(other,bridge,a,b),false,'editor must match');
+assert.equal(guard.mayReplace(input,another,a,b),false,'cross-chat overwrite forbidden');
+assert.equal(guard.mayReplace(input,bridge,a.replace('\n','\r\n'),b),true);
+guard.reset();
+assert.equal(guard.mayReplace(input,bridge,a,b),false,'clear ownership after successful send or navigation');
+console.log('PASS: extension-owned native draft retries and strict unrelated-draft isolation');

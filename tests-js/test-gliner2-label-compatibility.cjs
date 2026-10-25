@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict');
+const core=require('../extension/core/privacy-core.js');
+assert.equal(core.typeOf('name'),'PERSON');
+assert.equal(core.typeOf('address'),'ADDRESS');
+assert.equal(core.typeOf('email'),'EMAIL');
+assert.equal(core.typeOf('phone_num'),'PHONE');
+assert.equal(core.typeOf('id_num'),'ID');
+assert.equal(core.canAskForDisclosure('id_num'),false);
+assert.equal(core.typeOf('username'),'USERNAME');
+const raw='Nora Vale has id XZD390018';
+const entities=core.mergeDetected(raw,[{start:0,end:9,text:'Nora Vale',type:'name'},{start:17,end:26,text:'XZD390018',type:'id_num'}]);
+assert.equal(entities.length,2);
+assert.equal(entities[1].type,'ID');
+assert.equal(entities[1].necessary,false);
+console.log('PASS: GLiNER2 seven-label compatibility and unknown IDs always protected');

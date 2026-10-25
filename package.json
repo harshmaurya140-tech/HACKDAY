@@ -1,0 +1,17 @@
+{
+  "name": "incognix-release-build",
+  "private": true,
+  "version": "0.7.1",
+  "scripts": {
+    "prepare:model": "node scripts/download-gliner2-multi.mjs",
+    "build:model": "node scripts/build-gliner2.mjs",
+    "test": "for t in tests-js/test-*.cjs; do node \"$t\" || exit 1; done",
+    "verify:model": "node scripts/verify-gliner2-assets.mjs",
+    "build:model:complete": "npm run prepare:model && npm run build:model && npm run verify:model"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "onnxruntime-web": "^1.22.0",
+    "@huggingface/transformers": "^3.7.0"
+  }
+}

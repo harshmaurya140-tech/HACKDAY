@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'../extension');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const manifest=JSON.parse(read('manifest.json'));
+const scripts=manifest.content_scripts[0].js;
+assert(scripts.indexOf('content/native-draft.js')>0&&scripts.indexOf('content/native-draft.js')<scripts.indexOf('content/content.js'));
+const content=read('content/content.js'),background=read('background.js'),frame=read('private/frame.js');
+assert.match(content,/function hideNativeContainer/);
+assert.doesNotMatch(content.slice(content.indexOf('function installComposer'),content.indexOf('function resetForNavigation')),/style\.setProperty\('display','none'/);
+assert.match(content,/if\(!nativeDraft\.mayReplace/);
+assert.match(content,/nativeDraft\.note\(input,bridge,text\)/);
+assert.match(content,/if\(msg\.type==='RESET_NATIVE_DRAFT'\)/);
+assert.match(background,/if\(msg\.type==='RESET_NATIVE_DRAFT'\)/);
+assert.match(frame,/Discard the current unsent website draft/);
+assert.match(frame,/type:'RESET_NATIVE_DRAFT'/);
+assert.match(read('private/frame.html'),/id="discard-native"/);
+console.log('PASS: protected editor remains focusable, retries are owned, explicit recovery wired end-to-end');

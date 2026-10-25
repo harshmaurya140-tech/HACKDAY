@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const code=fs.readFileSync(path.join(__dirname,'../extension/private/frame.js'),'utf8');
+const core=require('../extension/core/privacy-core.js');
+assert(code.includes("$('response-label').hidden=true"),'no restored message heading shown');
+assert(!code.includes("$('restored-text').textContent='Unable to restore locally:"),'no extension errors injected as AI content');
+assert(code.includes("responseReady=!data.unresolved"),'only valid restoration replaces site output');
+const session=core.newSession();
+const request='Send a note for Mira Kaur';
+const entity={id:'e1',type:'PERSON',text:'Mira Kaur',start:16,end:25,necessary:false};
+const output=core.prepare(session,{text:request,entities:[entity]},{}).sanitized_text;
+const placeholder=output.match(/\[PRIVATE_PERSON_\d+_[A-F0-9]{6}\]/)[0];
+const raw='Hello '+placeholder+'. This is the original response!';
+const restored=core.restore(session,raw);
+assert.equal(restored.text,'Hello Mira Kaur. This is the original response!');
+assert.equal(core.restore(session,'No placeholder.').text,'No placeholder.');
+console.log('PASS: assistant output unchanged except exact placeholder substitutions');
