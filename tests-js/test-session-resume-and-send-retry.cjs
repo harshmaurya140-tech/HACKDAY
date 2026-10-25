@@ -35,11 +35,12 @@ const call=(type,bridge,data={})=>new Promise(resolve=>handler({type,bridge,...d
  const start=text.indexOf('Morgan Lee');
  const d=await call('ANALYZE',bridge1,{text,entities:[{type:'PERSON',text:'Morgan Lee',start,end:start+10}]});
  assert.equal(d.ok,true);
- const failed=await call('PREPARE_AND_SEND',bridge1,{draftId:d.draft_id,decisions:{}});
+ const preview=await call('PREVIEW',bridge1,{draftId:d.draft_id,decisions:{}});
+ const failed=await call('PREPARE_AND_SEND',bridge1,{draftId:d.draft_id,decisions:{},previewId:preview.previewId});
  assert.equal(failed.ok,false);
  assert(store.has([...store.keys()].find(k=>k.startsWith('ps-draft:'))),'failed send must retain pending draft');
  sendFails=false;
- const ok=await call('PREPARE_AND_SEND',bridge1,{draftId:d.draft_id,decisions:{}});
+ const ok=await call('PREPARE_AND_SEND',bridge1,{draftId:d.draft_id,decisions:{},previewId:preview.previewId});
  assert.equal(ok.ok,true);
  assert(![...store.keys()].some(k=>k.startsWith('ps-draft:')),'confirmed send clears draft');
  tabURL='https://claude.ai/chat/conversation-123';

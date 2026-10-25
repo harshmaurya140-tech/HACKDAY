@@ -24,7 +24,7 @@ function conversationKey(url){
 }
 function allowed(url){try{const u=new URL(url);return u.protocol==='https:'&&allowedHosts.has(u.hostname);}catch{return false;}}
 function privateFrame(sender){
-  try{const u=new URL(sender.url);return u.origin===new URL(chrome.runtime.getURL('/')).origin && u.pathname==='/private/frame.html';}
+  try{const u=new URL(sender.url);const own=new URL(chrome.runtime.getURL('/'));return u.protocol===own.protocol&&u.host===own.host && u.pathname==='/private/frame.html';}
   catch{return false;}
 }
 async function channel(bridge,sender){
@@ -62,7 +62,7 @@ async function handle(msg,sender){
   }
   if(!privateFrame(sender))throw Error('Only protected extension-origin frames can use private APIs');
   // All private requests other than HEALTH need an existing registered tab.
-  if(msg.type==='HEALTH')return {ok:true,mode:'extension-only',detector:'Chrome on-device AI interim (GLiNER2 not yet integrated)'};
+  if(msg.type==='HEALTH')return {ok:true,mode:'extension-only',detector:'Bundled BERT NER and Chrome contextual AI'};
   const entry=await channel(msg.bridge,sender);
   const sessionId=entry.sessionId;
   if(msg.type==='ANALYZE'){
@@ -71,17 +71,42 @@ async function handle(msg,sender){
     // Browser-local AI performed entity extraction and necessity assessment.
     // Validate every returned span before accepting; generic format validators
     // supplement extraction, never silently replace a failed local model.
-    const entities=PrivacyCore.mergeDetected(msg.text,msg.entities);
+    const settings=await chrome.storage.local?.get('incognixTerms');
+    const terms=String(settings?.incognixTerms||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    const entities=PrivacyCore.mergeDetected(msg.text,[...msg.entities,...PrivacyCore.confidentialTerms(msg.text,terms)]);
     const draftId=crypto.randomUUID();
     const draft={text:msg.text,entities,created:Date.now()};
     await chrome.storage.session.set({[DRAFT(sessionId)]:{id:draftId,...draft}});
     return {ok:true,draft_id:draftId,entities,needs_permission:entities.some(x=>x.necessary)};
   }
+  if(msg.type==='SAVE_EDITOR'||msg.type==='LOAD_EDITOR'){
+    const tab=await chrome.tabs.get(entry.tabId);
+    const route=conversationKey(tab.url)||new URL(tab.url).origin+new URL(tab.url).pathname;
+    const key=`ps-editor:${entry.tabId}:${route}`;
+    if(msg.type==='LOAD_EDITOR')return {ok:true,text:(await chrome.storage.session.get(key))[key]||''};
+    if(typeof msg.text!=='string'||msg.text.length>12000)throw Error('Invalid private draft');
+    if(msg.text)await chrome.storage.session.set({[key]:msg.text});else await chrome.storage.session.remove(key);
+    return {ok:true};
+  }
+  if(msg.type==='CANCEL_DRAFT'){
+    await chrome.storage.session.remove(DRAFT(sessionId));return {ok:true};
+  }
+  if(msg.type==='PREVIEW'){
+    const stored=(await chrome.storage.session.get(DRAFT(sessionId)))[DRAFT(sessionId)];
+    if(!stored||stored.id!==msg.draftId||Date.now()-stored.created>300000)throw Error('Draft expired; analyze again.');
+    const session=await getSession(sessionId);
+    const prepared=PrivacyCore.prepare(session,stored,msg.decisions||{});
+    const previewId=crypto.randomUUID();
+    await putSession(sessionId,session);
+    await chrome.storage.session.set({[DRAFT(sessionId)]:{...stored,preview:{id:previewId,prepared}}});
+    return {ok:true,previewId,...prepared};
+  }
   if(msg.type==='PREPARE_AND_SEND'){
     const stored=(await chrome.storage.session.get(DRAFT(sessionId)))[DRAFT(sessionId)];
     if(!stored||stored.id!==msg.draftId||Date.now()-stored.created>5*60*1000)throw Error('Draft expired; analyze again.');
+    if(!stored.preview||stored.preview.id!==msg.previewId)throw Error('Review outgoing text before sending.');
     const session=await getSession(sessionId);
-    const prepared=PrivacyCore.prepare(session,stored,msg.decisions||{});
+    const prepared=stored.preview.prepared;
     if(!prepared.sanitized_text.trim())throw Error('Empty sanitized prompt blocked');
     // Keep mapping ready for early response restoration. Preserve the draft
     // until the adapter actually confirms submission; failed sends must not
@@ -125,12 +150,19 @@ async function handle(msg,sender){
   }
   if(msg.type==='CLEAR_SESSION'){
     await chrome.storage.session.remove([SESS(sessionId),DRAFT(sessionId)]);
+    const all=await chrome.storage.session.get(null);
+    await chrome.storage.session.remove(Object.keys(all).filter(k=>k.startsWith(`ps-editor:${entry.tabId}:`)));
     return {ok:true};
   }
   throw Error('Unknown request');
 }
+const queues=new Map();
 chrome.runtime.onMessage.addListener((m,sender,respond)=>{
-  handle(m,sender).then(respond).catch(e=>respond({ok:false,error:e.message}));
+  const key=String(sender.tab?.id)+':'+String(m?.bridge);
+  const task=(queues.get(key)||Promise.resolve()).catch(()=>{}).then(()=>handle(m,sender));
+  queues.set(key,task);
+  task.finally(()=>{if(queues.get(key)===task)queues.delete(key);}).catch(()=>{});
+  task.then(respond).catch(e=>respond({ok:false,error:e.message}));
   return true;
 });
 
@@ -143,6 +175,7 @@ if(chrome.tabs?.onRemoved?.addListener){
       const sessions=new Set();
       const keys=[];
       for(const [key,value] of Object.entries(all)){
+        if(key.startsWith(`ps-editor:${tabId}:`))keys.push(key);
         if(key.startsWith(`ps-conversation:${tabId}:`)){
           keys.push(key);if(typeof value==='string')sessions.add(value);
         }
@@ -155,3 +188,5 @@ if(chrome.tabs?.onRemoved?.addListener){
     }catch{/* No user data enters diagnostics. */}
   });
 }
+
+if(chrome.action?.onClicked)chrome.action.onClicked.addListener(()=>chrome.tabs.create({url:chrome.runtime.getURL('private/workspace.html')}));

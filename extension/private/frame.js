@@ -68,6 +68,9 @@ if('ResizeObserver' in window){
   watch.observe(mode==='response'?$('response'):$('composer'));
 }
 let current=null;
+let revision=0;
+let analysisController;
+let previewId=null;
 let busy=false;
 let lastApprovedDecisions=null;
 let protectionEnabled=true;
@@ -91,7 +94,7 @@ function updateProtectionUI(enabled){
   resize();
 }
 function status(text,error=false){const el=$('status');el.textContent=text;el.className='status '+(error?'error':'ok');}
-function markBusy(on){busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
+function markBusy(on){for(const id of ['confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
 function makeChoice(e){
   const box=document.createElement('div');box.className='choice';
   const heading=document.createElement('div');heading.className='choice-header';
@@ -134,13 +137,15 @@ function showRecovery(error){
 async function prepareAndSend(decisions={}){
   if(!current||!protectionEnabled)return;
   lastApprovedDecisions=decisions;
+  const snapshot=revision;
   markBusy(true);
   try{
-    const done=await message({type:'PREPARE_AND_SEND',draftId:current.draft_id,decisions});
-    $('draft').value='';$('permission').hidden=true;$('native-recovery').hidden=true;current=null;lastApprovedDecisions=null;
-    status('Sanitized prompt handed to the AI website');
-    $('notice').textContent=`Protected ${done.replacements} field(s). Review the chat to confirm delivery.`;
-    await message({type:'RESCAN'}).catch(()=>{});
+    const preview=await message({type:'PREVIEW',draftId:current.draft_id,decisions});
+    if(snapshot!==revision)throw Error('Draft changed; review again.');
+    previewId=preview.previewId;$('outgoing').value=preview.sanitized_text;
+    $('preview').hidden=false;$('permission').hidden=true;status('Review exactly what will leave your browser');
+    return;
+
   }catch(e){status(e.message,true);showRecovery(e);$('notice').textContent='Nothing unprotected was intentionally submitted.';}
   finally{markBusy(false);resize();}
 }
@@ -149,11 +154,16 @@ async function doSend(){
   if(current && !$('permission').hidden){status('Choose disclosure settings and click Approve & send.',true);return;}
   const text=$('draft').value;
   if(!text.trim())return;
+  current=null;previewId=null;$('preview').hidden=true;
+  const started=revision;
   markBusy(true);
   try{
     status('Scanning locally…');
-    const local=await LocalPrivacyAI.analyze(text,{onStatus:msg=>status(msg)});
+    analysisController=new AbortController();
+    const local=await LocalPrivacyAI.analyze(text,{onStatus:msg=>status(msg),signal:analysisController.signal});
+    if(started!==revision)throw Error('Draft changed. Review it again.');
     const analysed=await message({type:'ANALYZE',text,entities:local.entities});
+    if(started!==revision){await message({type:'CANCEL_DRAFT'});throw Error('Draft changed. Review it again.');}
     current=analysed;
     $('native-recovery').hidden=true;
     const needed=groupPermissionEntities(analysed.entities);
@@ -173,6 +183,19 @@ async function doSend(){
 async function initComposer(){
   $('composer').hidden=false;
   $('composer').dataset.protection='on';
+  $('draft').maxLength=12000;
+  $('draft').addEventListener('input',()=>{analysisController?.abort();revision++;current=null;previewId=null;$('preview').hidden=true;$('permission').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});message({type:'SAVE_EDITOR',text:$('draft').value}).catch(()=>{});});
+  $('preview-cancel').addEventListener('click',()=>{if(busy)return;previewId=null;current=null;$('preview').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});resize();});
+  $('confirm-send').addEventListener('click',async()=>{
+    if(busy||!current||!previewId)return;
+    markBusy(true);$('draft').readOnly=true;
+    try{
+      const result=await message({type:'PREPARE_AND_SEND',draftId:current.draft_id,previewId});
+      $('draft').value='';await message({type:'SAVE_EDITOR',text:''});current=null;previewId=null;$('preview').hidden=true;
+      status('Sanitized prompt handed to the AI website');$('notice').textContent=`Protected ${result.replacements} field(s). Review the chat to confirm delivery.`;
+    }catch(e){status(e.message,true);showRecovery(e);}
+    finally{$('draft').readOnly=false;markBusy(false);resize();}
+  });
   $('send').addEventListener('click',doSend);
   $('protection-toggle').addEventListener('click',async()=>{
     if(busy)return;
@@ -183,7 +206,7 @@ async function initComposer(){
       if(!response?.ok)throw Error('Could not change protection state');
       // Leave any raw draft in the private extension textarea. Never copy it
       // into the website composer when the user turns protection off.
-      if(next){current=null;lastApprovedDecisions=null;$('permission').hidden=true;}
+      revision++;previewId=null;$('preview').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});if(next){current=null;lastApprovedDecisions=null;$('permission').hidden=true;}
       updateProtectionUI(next);
     }catch(e){status(e.message,true);}
     finally{$('protection-toggle').disabled=false;resize();}
@@ -225,7 +248,7 @@ async function initComposer(){
     if(!confirm('Clear the private mapping for this chat? Restoring earlier placeholders will no longer work.'))return;
     try{await message({type:'CLEAR_SESSION'});status('Mappings cleared');}catch(e){status(e.message,true);}
   });
-  try{await message({type:'HEALTH'});
+  try{const saved=await message({type:'LOAD_EDITOR'});if(revision===0&&!$('draft').value)$('draft').value=saved.text||'';await message({type:'HEALTH'});
     const available=await LocalPrivacyAI.availability();
     if(available==='unavailable')status('On-device AI unavailable; sending blocked',true);
     else if(available==='downloadable'||available==='downloading')status('Local AI download may be needed on Send');

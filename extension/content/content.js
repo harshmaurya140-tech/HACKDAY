@@ -349,6 +349,20 @@
     nativeDraft.reset();
     return {ok:true};
   }
+  // Best-effort UI gating, not a network firewall. Originals are accepted only
+  // in the extension workspace. A provider can still transmit data it already owns.
+  function blockMedia(event){
+    if(!protectionEnabled)return;
+    const fileEvent=(event.type==='drop'&&event.dataTransfer?.files?.length)||
+      (event.type==='paste'&&[...(event.clipboardData?.items||[])].some(x=>x.kind==='file'));
+    const target=event.target?.closest?.('input[type="file"],button,[role="button"],label');
+    const label=target?[target.getAttribute('aria-label'),target.getAttribute('title'),target.getAttribute('data-testid'),target.textContent].filter(Boolean).join(' '):'';
+    const mediaClick=event.type==='click'&&(target?.matches('input[type="file"]')||/attach|upload|microphone|dictat|voice|screen shar|camera/i.test(label));
+    if(fileEvent||mediaClick){event.preventDefault();event.stopImmediatePropagation();
+      alert('Protected mode blocks native files and voice. Open Incognix from the extension toolbar to review a supported document locally.');
+    }
+  }
+  if(typeof document!=='undefined')for(const type of ['click','drop','paste'])document.addEventListener?.(type,blockMedia,true);
   function observerScan(){
     if(!checkRuntime())return;
     installComposer();

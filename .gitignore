@@ -1,0 +1,9 @@
+node_modules/
+dist/
+artifacts/
+.model-cache/
+extension/model/
+extension/private/vendor.bundle.js
+extension/private/ner-worker.js
+extension/private/vendor/
+*.wasm

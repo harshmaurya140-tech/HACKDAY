@@ -1,17 +1,28 @@
 {
   "name": "incognix-release-build",
   "private": true,
-  "version": "0.7.1",
+  "version": "0.8.0",
   "scripts": {
-    "prepare:model": "node scripts/download-gliner2-multi.mjs",
-    "build:model": "node scripts/build-gliner2.mjs",
+    "prepare:model": "node scripts/download-ner.mjs && node scripts/download-ocr.mjs",
+    "build:model": "node scripts/build.mjs",
     "test": "for t in tests-js/test-*.cjs; do node \"$t\" || exit 1; done",
-    "verify:model": "node scripts/verify-gliner2-assets.mjs",
-    "build:model:complete": "npm run prepare:model && npm run build:model && npm run verify:model"
+    "verify:model": "node scripts/verify-ner.mjs && node scripts/download-ocr.mjs --verify",
+    "build:model:complete": "npm run prepare:model && npm run build:model && npm run verify:model",
+    "build": "node scripts/build.mjs",
+    "prepare:ner": "node scripts/download-ner.mjs",
+    "verify:ner": "node scripts/verify-ner.mjs",
+    "test:browser": "node tests-browser/release.cjs",
+    "package": "python3 scripts/package.py",
+    "check": "node scripts/check.mjs"
   },
   "devDependencies": {
-    "esbuild": "^0.25.0",
-    "onnxruntime-web": "^1.22.0",
-    "@huggingface/transformers": "^3.7.0"
+    "@huggingface/tokenizers": "0.2.0",
+    "@huggingface/transformers": "4.3.1",
+    "esbuild": "0.25.11",
+    "onnxruntime-web": "1.22.0",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "5.4.296",
+    "playwright": "1.56.1",
+    "tesseract.js": "6.0.1"
   }
 }

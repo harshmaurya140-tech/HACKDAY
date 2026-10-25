@@ -10,7 +10,7 @@
     TAX_ID:'PAN',TAX_NUMBER:'PAN',PAN_NUMBER:'PAN',PAN_CARD:'PAN',AADHAAR_NUMBER:'AADHAAR',AADHAAR_CARD:'AADHAAR',GOVERNMENT_ID:'ID',NATIONAL_ID_NUMBER:'ID',
     PHONE_NUMBER:'PHONE',PHONE_NUM:'PHONE',MOBILE:'PHONE',ID_NUM:'ID',PAYMENT_CARD:'CARD',CREDIT_CARD:'CARD',
     SALARY:'INCOME',TRANSACTION_AMOUNT:'AMOUNT',PAYMENT_AMOUNT:'AMOUNT',FINANCIAL_AMOUNT:'AMOUNT',MONEY:'AMOUNT',PASSWORD:'SECRET',API_KEY:'SECRET',
-    PASSPORT:'ID',IP_ADDRESS:'IP',LOCATION:'ADDRESS',CITY:'ADDRESS'
+    SSN:'ID',SOCIAL_SECURITY_NUMBER:'ID',CVV:'SECRET',PIN:'SECRET',OTP:'SECRET',PRIVATE_KEY:'SECRET',ROUTING_NUMBER:'ACCOUNT',PASSPORT:'ID',IP_ADDRESS:'IP',LOCATION:'ADDRESS',CITY:'ADDRESS'
   };
   // Category-level safeguard, never hardcoded prompt text or individual values.
   // An inference model must never override the user's decision to keep credentials hidden.
@@ -40,11 +40,11 @@
   function validates(text, e) {
     return Number.isInteger(e.start) && Number.isInteger(e.end) &&
       e.start>=0 && e.end<=text.length && e.start<e.end &&
-      text.slice(e.start,e.end)===e.text && e.text.length<=500;
+      text.slice(e.start,e.end)===e.text && e.text.length<=60000;
   }
   function spansFor(text, raw) {
-    if (typeof text !== 'string' || text.length>12000) throw Error('Draft is too long for local analysis.');
-    if (!Array.isArray(raw) || raw.length>100) throw Error('Local detector returned invalid results.');
+    if (typeof text !== 'string' || text.length>60000) throw Error('Draft is too long for local analysis.');
+    if (!Array.isArray(raw) || raw.length>2000) throw Error('Local detector returned invalid results.');
     const proposed = [];
     for (const e of raw) {
       if (!e || typeof e!=='object') continue;
@@ -109,6 +109,20 @@
       const start=match.index+match[0].lastIndexOf(number);
       findings.push({type:'ACCOUNT',text:number,start,end:start+number.length,necessary:false,reason:'Account identifier; hidden by default.'});
     }
+    const add=(type,value,start)=>findings.push({type,text:value,start,end:start+value.length,necessary:false,reason:'Structured credential; hidden by default.'});
+    const luhn=digits=>{let sum=0;for(let i=digits.length-1,n=0;i>=0;i--,n++){let d=Number(digits[i]);if(n%2){d*=2;if(d>9)d-=9;}sum+=d;}return sum%10===0;};
+    for(const m of text.matchAll(/(?<![\p{L}\p{N}])(?:\d[ -]?){12,18}\d(?![\p{L}\p{N}])/gu)){
+      const digits=m[0].replace(/\D/g,'');if(digits.length>=13&&digits.length<=19&&luhn(digits))add('CARD',m[0],m.index);
+    }
+    for(const m of text.matchAll(/\b(?!000|666|9\d\d)\d{3}[- ](?!00)\d{2}[- ](?!0000)\d{4}\b/g))add('ID',m[0],m.index);
+    for(const m of text.matchAll(/\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b/g)){
+      const compact=m[0].replace(/ /g,'');const reordered=compact.slice(4)+compact.slice(0,4);let remainder=0;
+      for(const c of reordered){for(const digit of /[A-Z]/.test(c)?String(c.charCodeAt(0)-55):c)remainder=(remainder*10+Number(digit))%97;}
+      if(remainder===1)add('ACCOUNT',m[0],m.index);
+    }
+    for(const m of text.matchAll(/\b(?:password|passwd|api[_ -]?key|secret|access[_ -]?token|bearer)["']?\s*(?:is|[:=])\s*["']?([^\s"',;]{8,500})/gi))add('SECRET',m[1],m.index+m[0].lastIndexOf(m[1]));
+    for(const m of text.matchAll(/\b(?:cvv|pin|otp)["']?\s*(?:is|[:=])\s*["']?(\d{3,8})\b/gi))add('SECRET',m[1],m.index+m[0].lastIndexOf(m[1]));
+    for(const m of text.matchAll(/-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z]+ )?PRIVATE KEY-----/g))add('SECRET',m[0],m.index);
     return findings;
   }
   function mergeDetected(text, modelEntities) {
@@ -117,12 +131,21 @@
     all.sort((a,b)=>a.start-b.start || b.end-a.end);
     return spansFor(text,all);
   }
+  function confidentialTerms(text,terms){
+    if(!Array.isArray(terms)||terms.length>100)throw Error('Use at most 100 confidential terms.');
+    const entities=[];
+    for(const value of new Set(terms)){
+      if(typeof value!=='string'||!value.length||value.length>200)throw Error('Invalid confidential term.');
+      for(let start=text.indexOf(value);start>=0;start=text.indexOf(value,start+value.length))entities.push({start,end:start+value.length,text:value,type:'SECRET',necessary:false,reason:'Local confidential term'});
+    }
+    return entities;
+  }
   function newSession() {return {realToDummy:{},dummyToReal:{},counts:{}};}
   function tokenFor(session,e) {
     // Preserve exact spelling/case for lossless round-trip. A case-folded key
     // maps distinct user-provided strings to the same placeholder and restores
     // the wrong original text.
-    const key=e.type+'\u0000'+e.text.normalize('NFC');
+    const key=e.type+'\u0000'+e.text;
     if(session.realToDummy[key])return session.realToDummy[key];
     const count=(session.counts[e.type]||0)+1;
     session.counts[e.type]=count;
@@ -169,7 +192,7 @@
     const unresolved=[...restored.matchAll(TOKEN)].some(m=>!Object.prototype.hasOwnProperty.call(session.dummyToReal,m[0]));
     return {text:restored,unresolved};
   }
-  const api={typeOf,canAskForDisclosure,spansFor,detectFormats,mergeDetected,newSession,prepare,restore,TOKEN};
+  const api={confidentialTerms,typeOf,canAskForDisclosure,spansFor,detectFormats,mergeDetected,newSession,prepare,restore,TOKEN};
   root.PrivacyCore=api;
   if(typeof module!=='undefined' && module.exports)module.exports=api;
 })(typeof self!=='undefined'?self:globalThis);
