@@ -40,4 +40,4 @@ Load `extension/` after building. Packages and SHA-256 checksums are written to 
 
 ## Release status
 
-Based on main `afdc1e0e8f82c2b63cb4ccffe057cdb863be03ad` (v0.7.1). Current automated tests use synthetic data and isolated browser fixtures. Live signed-in provider acceptance and real Chrome semantic-model quality evaluation are outstanding. DOCX, audio transcription, managed enterprise policy and universal automatic file-upload protection are not implemented. See [release notes](RELEASE_NOTES.md).
+Based on main `afdc1e0e8f82c2b63cb4ccffe057cdb863be03ad` (v0.7.1). Current automated tests use synthetic data and isolated browser fixtures. A signed-in synthetic smoke test completed real local analysis and masked sends on all three providers; All three restored replies; ChatGPT and Gemini display fixes passed live retesting. Broad provider acceptance and semantic-model quality evaluation remain outstanding; see [live evidence](docs/LIVE_TEST_CHECKPOINT.md). DOCX, audio transcription, managed enterprise policy and universal automatic file-upload protection are not implemented. See [release notes](RELEASE_NOTES.md).

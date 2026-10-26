@@ -2,7 +2,7 @@
 
 | Area | Implemented | Boundary |
 |---|---|---|
-| ChatGPT / Claude / Gemini | Private iframe, adaptive styling, ON/OFF, preview, confirmed send, response restoration | Isolated fixtures verified; live authenticated DOM acceptance pending |
+| ChatGPT / Claude / Gemini | Private iframe, adaptive styling, ON/OFF, preview, confirmed send, response restoration | Isolated fixtures verified; signed-in basic masked sends passed on all three, restoration passed all three; ChatGPT/Gemini display fixes passed live retest |
 | Other chatbots | Private workspace, reviewed copy, manual answer restoration | No automatic interception, send or restoration |
 | AI | Real bundled quantized BERT, Chrome local contextual analysis | BERT is English-oriented and fallible; semantic runtime availability varies |
 | Credentials | Luhn cards, IBAN checksum, SSN patterns, labeled secrets, keys, OTP/PIN/CVV and baseline checks | Pattern coverage is not exhaustive |

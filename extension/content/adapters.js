@@ -24,8 +24,8 @@
         'button[aria-label="Send message"]',
         'form button[type="submit"]'
       ],
-      assistant:['[data-message-author-role="assistant"]','[data-role="assistant"]','[data-message-author="assistant"]'],
-      user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]']
+      assistant:['[data-message-author-role="assistant"]','[data-role="assistant"]','[data-message-author="assistant"]','[data-markdown-text-style="assistant-message"]'],
+      user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]','[data-user-message-bubble="true"]']
     },
     'chat.openai.com': {
       id:'chatgpt',
@@ -44,8 +44,8 @@
         'button[aria-label="Send prompt"]',
         'form button[type="submit"]'
       ],
-      assistant:['[data-message-author-role="assistant"]','[data-role="assistant"]','[data-message-author="assistant"]'],
-      user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]']
+      assistant:['[data-message-author-role="assistant"]','[data-role="assistant"]','[data-message-author="assistant"]','[data-markdown-text-style="assistant-message"]'],
+      user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]','[data-user-message-bubble="true"]']
     },
     'claude.ai': {
       id:'claude',
@@ -101,7 +101,7 @@
         const rect=node.getBoundingClientRect?.();
         if(rect && (rect.height===0||rect.width===0))continue;
         const form=node.closest?.('form');
-        const ancestor=node.closest?.('[role="dialog"], [data-testid*="artifact"], [data-testid*="canvas"], [class*="document-editor"]');
+        const ancestor=node.closest?.('[role="dialog"], [data-testid*="artifact"], [data-testid*="canvas"], [class*="document-editor"], [data-oai-writing-block-surface], .writing-block-editor');
         // Host sites create separate document/canvas editors. Those are not
         // the protected chat channel, regardless of which selector matched.
         if(ancestor&&!form)continue;
@@ -138,7 +138,7 @@
     if(!node)return '';
     if(typeof node.querySelectorAll!=='function')return String(node.innerText||node.textContent||'').trim();
     const excluded='button, [role="button"], [role="toolbar"], [role="status"], '+
-      '[aria-hidden="true"], .sr-only, style, script, svg, user-query, '+
+      '[aria-hidden="true"], .sr-only, .cdk-visually-hidden, style, script, svg, user-query, '+
       '[data-test-id*="message-actions"], [data-test-id*="footer"]';
     const pieces=[];
     const read=(current)=>{
@@ -214,7 +214,7 @@
     }catch{return null;}
   };
   data.messageAnchor=(node)=>{
-    if(data.id==='chatgpt')return node.closest?.('[data-testid^="conversation-turn"], article[data-testid*="conversation"]')||node;
+    if(data.id==='chatgpt')return node.closest?.('[data-testid^="conversation-turn"], article[data-testid*="conversation"], [data-chatgpt-search-unit-key]')||node;
     if(data.id==='gemini')return node.closest?.('model-response, user-query')||node;
     return node;
   };
@@ -233,7 +233,12 @@
    */
   data.extractMessageText=(node,role='assistant')=>{
     let text=String(node?.innerText||node?.textContent||'').trim();
+    if(data.id==='chatgpt')return data.readableText(node);
     if(data.id==='gemini'){
+      if(role==='user'){
+        const body=node.querySelector?.('.query-text');
+        if(body)return data.readableText(body);
+      }
       let actual=node;
       if(role==='assistant')actual=data.answerBody(node);
       if(Array.isArray(actual))return actual.map(data.readableText).filter(Boolean).join('\n\n').trim();
