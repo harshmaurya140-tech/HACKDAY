@@ -30,3 +30,7 @@ The local-model status remained at “Downloading Chrome local AI model… 100%�
 Native UI rendered the private frames normally. Claiming the same tabs through the browser connector exposed empty `srcdoc` frames; this effect was not seen before claiming. The cause is unconfirmed. No attribute was removed or browser restriction bypassed. DOM inspection through that connector was read-only and limited to the synthetic test messages.
 
 The browser connector also blocks extension settings navigation. The user reloaded the extension, then native live retesting resumed with fresh synthetic submissions. A settings reload alone was not treated as a passing test.
+
+## 0.8.1 follow-up
+
+The user reloaded and enabled 0.8.1. The native Chrome toolbar reported Incognix available on the synthetic ChatGPT tab, but the tab subsequently exposed no page accessibility content and screenshot capture returned black. A toolbar-popup check was interrupted by concurrent user interaction. No successful live PDF-send or visual-layout result is claimed for this revision. Automated fixture evidence is in TEST_EVIDENCE.md; the prior 0.8.0 signed-in results do not establish acceptance of the new features.

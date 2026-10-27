@@ -1,10 +1,11 @@
 # Install Incognix
 
-1. Extract `incognix-0.8.0-extension.zip` into a permanent folder.
+1. Extract `incognix-0.8.1-extension.zip` into a permanent folder.
 2. Open `chrome://extensions`, enable Developer mode, click Load unpacked, and choose the extracted folder containing `manifest.json`.
-3. Pin Incognix. Clicking its icon opens the private workspace for any chatbot.
+3. Pin Incognix. Clicking its icon opens a compact popup. On other HTTPS AI sites, choose Enable on this site and approve Chrome’s access prompt. A protected composer appears only when a supported input is detected.
 4. On ChatGPT, Claude or Gemini, refresh the page to activate the private composer. ON means use the protected editor; OFF exposes the provider's normal editor. Switching OFF does not copy your private draft to the site.
-5. Review the exact outgoing text, then confirm sending or copying. Approve disclosure only when appropriate. Never assume detection found every sensitive fact.
+5. Use the + inside the protected composer to attach a text PDF/TXT/MD/CSV. Review its extracted content with your prompt; only reviewed text is sent, not the original PDF. Attachments are held in frame memory and disappear on refresh.
+6. Review the exact outgoing text, then confirm sending or copying. Approve disclosure only when appropriate. Never assume detection found every sensitive fact.
 
 Chrome 138+ is required, but version alone does not guarantee Chrome's on-device language model is supported. Hardware, platform, storage and model availability determine whether semantic analysis can run. Chrome may download its own model on first use; Incognix does not require a separate application. See [Chrome Prompt API requirements](https://developer.chrome.com/docs/ai/prompt-api).
 

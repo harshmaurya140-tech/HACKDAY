@@ -218,6 +218,7 @@
             }
           }),firstSession?240000:60000,'Chrome local AI startup',()=>startupController.abort());
           firstSession=false;
+          onStatus('Analyzing privately on this device…');
           const onePrompt=async(input,time,labelText)=>{
             const controller=new AbortController();
             signal?.throwIfAborted();

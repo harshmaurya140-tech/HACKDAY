@@ -1,0 +1,12 @@
+const {chromium}=require('playwright');const assert=require('node:assert/strict'),path=require('node:path');
+(async()=>{const b=await chromium.launch({headless:true});try{
+ const p=await b.newPage();await p.route('https://other-ai.example/**',r=>r.fulfill({contentType:'text/html',body:'<form><textarea placeholder="Ask a question"></textarea><button type="submit">Send</button></form><form><input type="password"><textarea placeholder="Search"></textarea></form>'}));
+ await p.goto('https://other-ai.example/');await p.addScriptTag({path:path.resolve('extension/content/adapters.js')});
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findComposer()?.getAttribute('placeholder')),'Ask a question');
+ await p.evaluate(()=>{const f=document.createElement('form');f.innerHTML='<textarea placeholder="Message another bot"></textarea>';document.body.append(f);});
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findComposer()),null,'ambiguous editors must not be auto-selected');
+ await p.evaluate(()=>document.querySelectorAll('form')[2].remove());
+ await p.locator('textarea').first().evaluate(e=>e.setAttribute('placeholder','Enter password'));
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findComposer()),null,'unrelated sensitive fields must be left alone');
+ console.log('PASS optional-site adapter selects unique chat input and rejects unrelated/ambiguous forms');
+}finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

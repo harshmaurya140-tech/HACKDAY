@@ -4,7 +4,7 @@ const path=require('node:path');
 const ext=path.resolve(__dirname,'../extension');
 const manifest=JSON.parse(fs.readFileSync(path.join(ext,'manifest.json'),'utf8'));
 assert(!manifest.host_permissions.some(x=>/127\.0\.0\.1|localhost/.test(x)));
-assert.equal(manifest.version,'0.8.0');
+assert.equal(manifest.version,require('../package.json').version);
 const background=fs.readFileSync(path.join(ext,'background.js'),'utf8');
 assert(!/fetch\(|http:\/\/|https:\/\//.test(background),'background must not call out to a server');
 assert.match(background,/chrome\.storage\.session/,'store mappings in extension-only ephemeral storage');

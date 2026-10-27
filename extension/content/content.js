@@ -161,8 +161,9 @@
     try{await chrome.runtime.sendMessage({type:'REGISTER_TAB',bridge});}
     catch{if(!runtimeAvailable())stopAfterInvalidation();}
   }
-  function findNative(){return adapter.findComposer?.()||adapter.query(adapter.composer);}
+  function findNative(){return adapter.findComposer?adapter.findComposer?.():adapter.query(adapter.composer);}
   function containerFor(native){
+    if(adapter.id==='generic')return native.closest('form')||native.closest('[data-testid*="composer"], [class*="composer"], [class*="chat-input"]');
     if(adapter.id==='chatgpt')return native.closest('form') || native.parentElement?.parentElement;
     if(adapter.id==='gemini')return native.closest('form')||native.closest('input-area-v2')||native.closest('[class*="input-area-container"]')||native.closest('rich-textarea')?.parentElement||native.parentElement?.parentElement;
     return native.closest('form')||native.closest('[data-testid="chat-input"]')||native.parentElement?.parentElement;
@@ -235,7 +236,13 @@
       const sel=window.getSelection();
       if(sel){const range=document.createRange();range.selectNodeContents(el);sel.removeAllRanges();sel.addRange(range);}
       try{document.execCommand('insertText',false,value);}catch{}
-      if((el.innerText||'').trim()!==value.trim())el.textContent=value;
+      if((el.innerText||'').trim()!==value.trim()){
+        // Preserve extracted PDF paragraph boundaries even on editors whose
+        // CSS collapses whitespace. Only sanitized strings become text nodes.
+        const nodes=[];
+        value.split('\n').forEach((line,index)=>{if(index)nodes.push(document.createElement('br'));nodes.push(document.createTextNode(line));});
+        el.replaceChildren(...nodes);
+      }
       el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:value}));
     }else{
       const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')?.set || Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;
@@ -276,6 +283,13 @@
         return true;
       };
       const findEnabledSend=(scope)=>{
+        if(adapter.id==='generic'&&scope?.querySelectorAll){
+          const buttons=new Set();
+          for(const selector of adapter.send)for(const button of scope.querySelectorAll(selector)){
+            if(isSendButton(button))buttons.add(button);
+          }
+          return buttons.size===1?[...buttons][0]:null;
+        }
         if(scope?.querySelectorAll){
           for(const selector of adapter.send){
             try{
@@ -297,13 +311,14 @@
         // Select only enabled, known Send controls; a stale disabled control
         // must not hide an enabled replacement after a framework rerender.
         button=findEnabledSend(hiddenComposer) ||
+               (adapter.id!=='generic' && (
                findEnabledSend(hiddenComposer?.parentElement) ||
-               findEnabledSend(typeof document!=="undefined"?document:null);
+               findEnabledSend(typeof document!=="undefined"?document:null)));
         if(button)break;
       }
       if(button){
         navigation.markSendAttempt();button.click();
-      }else if(form && typeof form.requestSubmit==='function' &&
+      }else if(adapter.id!=='generic' && form && typeof form.requestSubmit==='function' &&
                !form.querySelector('button[type="submit"][disabled],button[type="submit"][aria-disabled="true"]')){
         // A uniquely bound native form is a safer fallback than pressing keys
         // on a web-controlled page. No fallback submits an unsanitized prompt.
@@ -444,6 +459,7 @@
   }
   chrome.runtime.onMessage.addListener((msg,sender,respond)=>{
     if(!checkRuntime())return;
+    if(msg.type==='INCOGNIX_STATUS'){respond({ok:true,installed:Boolean(privateComposer?.isConnected),site:adapter.id});return;}
     if(msg.bridge!==bridge){respond({ok:false,error:'Wrong conversation'});return;}
     if(msg.type==='SET_PROTECTION_ENABLED'){
       if(typeof msg.enabled!=='boolean'){respond({ok:false,error:'Invalid toggle state'});return;}
@@ -501,8 +517,8 @@
       // still leaves Approve & send below the bottom of the browser viewport.
       // Bound composer height by *actual space below its current screen position*.
       const frameRect=privateComposer?.getBoundingClientRect();
-      const composerRoom=Math.max(165,Math.floor(window.innerHeight-(frameRect?.top??0)-14));
-      const composerMax=Math.min(730,Math.max(165,window.innerHeight-45),composerRoom);
+      const composerRoom=Math.max(80,Math.floor(window.innerHeight-(frameRect?.top??0)-14));
+      const composerMax=Math.min(480,Math.max(80,window.innerHeight-45),composerRoom);
       const height=Math.max(50,Math.min(msg.messageId?maxResponseHeight:composerMax,Number(msg.height)||120));
       if(msg.messageId){
         const f=frames.get(msg.messageId);
@@ -542,7 +558,7 @@
     if(!protectionEnabled){positionReenableFrame();return;}
     if(!privateComposer?.isConnected)return;
     const rect=privateComposer.getBoundingClientRect();
-    const room=Math.max(165,Math.floor(window.innerHeight-rect.top-14));
+    const room=Math.max(80,Math.floor(window.innerHeight-rect.top-14));
     const cap=Math.min(730,room);
     const current=Number.parseFloat(privateComposer.style.height)||140;
     if(current>cap)privateComposer.style.height=cap+'px';

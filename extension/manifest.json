@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Incognix",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Local privacy review for any chatbot, with private composers on ChatGPT, Claude and Gemini. Development preview.",
   "minimum_chrome_version": "138",
   "permissions": [
     "storage",
-    "tabs"
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
     "https://chatgpt.com/*",
@@ -40,17 +41,18 @@
         "private/frame.html"
       ],
       "matches": [
-        "https://chatgpt.com/*",
-        "https://chat.openai.com/*",
-        "https://claude.ai/*",
-        "https://gemini.google.com/*"
+        "https://*/*"
       ]
     }
   ],
   "action": {
-    "default_title": "Open Incognix private workspace"
+    "default_title": "Open Incognix private workspace",
+    "default_popup": "private/popup.html"
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
-  }
+  },
+  "optional_host_permissions": [
+    "https://*/*"
+  ]
 }

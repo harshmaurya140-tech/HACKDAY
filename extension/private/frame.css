@@ -165,3 +165,22 @@ textarea{font:inherit;display:block;width:100%;border:0;resize:vertical;outline:
 #off-toggle{box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-width:0;width:100%;height:38px;border:1px solid var(--ps-host-border,var(--ps-border));border-radius:999px;padding:2px 5px;background:var(--ps-host-bg,var(--ps-bg));color:var(--ps-host-text,var(--ps-text));font-family:var(--ps-host-font,inherit);box-shadow:0 2px 9px #0002}
 #off-toggle .protection-switch{justify-content:center;padding:5px 4px;width:100%;font-size:11px}
 #off-toggle .protection-switch[aria-checked="false"] .switch-track{background:#777b83}
+
+/* Compact composer: preserve host geometry; expand only for actual review. */
+[hidden]{display:none!important}
+#composer{min-width:0;padding:8px 12px;border-color:color-mix(in srgb,var(--ps-host-text,var(--ps-text)) 16%,transparent);border-radius:var(--ps-host-radius,24px)}
+#composer .top{margin:0;gap:6px}
+#composer .status{font-size:10px;max-width:62%;line-height:1.25}
+#composer #draft{min-height:36px;height:36px;max-height:120px;resize:none;padding:8px 2px;font-size:14px;background:transparent}
+#composer .bottom{margin-top:2px;gap:6px}
+#composer .notice{font-size:10px;line-height:1.25}
+#composer .tools{font-size:10px;margin-top:2px;color:var(--ps-muted)}
+#composer .tools summary{cursor:pointer;width:max-content}
+#composer .tools .foot{margin-top:2px}
+#composer #attach{font-size:20px;padding:0;width:30px;height:30px;border-radius:50%;background:var(--ps-soft);color:inherit;flex-shrink:0}
+#attachment-info{font-size:11px;overflow-wrap:anywhere;padding:5px 0;color:var(--ps-muted)}
+#composer #outgoing{max-height:160px;resize:none;border:1px solid var(--ps-border);margin:6px 0}
+#composer:has(#preview:not([hidden])) #draft{display:none}
+#composer:has(#preview:not([hidden])) .bottom{display:none}
+#composer .status:empty{display:none}
+@media(max-width:480px){#composer .status{max-width:55%;margin-left:auto;text-align:right}#composer .notice{display:none}#composer .bottom #send{margin-left:auto}}

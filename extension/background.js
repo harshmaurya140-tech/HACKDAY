@@ -19,10 +19,11 @@ function conversationKey(url){
     if(u.hostname==='gemini.google.com'){
       const m=path.match(/^\/app\/([^/]+)/);return m?'gemini:'+m[1]:null;
     }
+    if(!allowedHosts.has(u.hostname))return u.origin+u.pathname+u.search+u.hash;
   }catch{}
   return null;
 }
-function allowed(url){try{const u=new URL(url);return u.protocol==='https:'&&allowedHosts.has(u.hostname);}catch{return false;}}
+async function allowed(url){try{const u=new URL(url);return u.protocol==='https:'&&(allowedHosts.has(u.hostname)||await chrome.permissions?.contains({origins:[u.origin+'/*']}));}catch{return false;}}
 function privateFrame(sender){
   try{const u=new URL(sender.url);const own=new URL(chrome.runtime.getURL('/'));return u.protocol===own.protocol&&u.host===own.host && u.pathname==='/private/frame.html';}
   catch{return false;}
@@ -33,7 +34,7 @@ async function channel(bridge,sender){
   if(!entry||!Number.isInteger(entry.tabId))throw Error('Privacy session missing. Refresh the page.');
   if(sender.tab?.id!==entry.tabId)throw Error('Private frame does not belong to this tab');
   const tab=await chrome.tabs.get(entry.tabId);
-  if(!allowed(tab.url))throw Error('Unsupported AI website');
+  if(!await allowed(tab.url)||entry.origin!==new URL(tab.url).origin)throw Error('Unsupported AI website');
   const from=new URL(sender.url);
   if(from.searchParams.get('bridge')!==bridge)throw Error('Private frame channel mismatch');
   return entry;
@@ -43,7 +44,7 @@ async function putSession(sessionId,s){await chrome.storage.session.set({[SESS(s
 async function handle(msg,sender){
   if(!msg||typeof msg!=='object')throw Error('Invalid extension request');
   if(msg.type==='REGISTER_TAB'){
-    if(!sender.tab||!allowed(sender.url||sender.tab.url))throw Error('Untrusted registration');
+    if(!sender.tab||!await allowed(sender.url||sender.tab.url))throw Error('Untrusted registration');
     if(!/^[a-f0-9-]{36}$/.test(msg.bridge||''))throw Error('Invalid channel');
     const current=(await chrome.storage.session.get(KEY(msg.bridge)))[KEY(msg.bridge)];
     if(current && current.tabId!==sender.tab.id)throw Error('Channel already belongs to another tab');
@@ -55,9 +56,23 @@ async function handle(msg,sender){
     const index=conversation?INDEX(sender.tab.id,conversation):null;
     const previous=index?(await chrome.storage.session.get(index))[index]:null;
     const sessionId=current?.sessionId||previous||`tab${sender.tab.id}_${msg.bridge}`;
-    const updates={[KEY(msg.bridge)]:{tabId:sender.tab.id,sessionId}};
+    const updates={[KEY(msg.bridge)]:{tabId:sender.tab.id,sessionId,origin:new URL(sender.url||sender.tab.url).origin}};
     if(index)updates[index]=sessionId;
     await chrome.storage.session.set(updates);
+    return {ok:true};
+  }
+  if(msg.type==='ENABLE_SITE'){
+    if(sender.tab||sender.url!==chrome.runtime.getURL('private/popup.html'))throw Error('Only the toolbar can enable a site');
+    const tab=await chrome.tabs.get(msg.tabId);
+    if(!await allowed(tab.url))throw Error('Site permission was not granted');
+    const origin=new URL(tab.url).origin,match=origin+'/*';
+    const files=['content/adapters.js','content/session-navigation.js','content/native-draft.js','content/content.js'];
+    if(!allowedHosts.has(new URL(tab.url).hostname)){
+      const id='incognix-'+Array.from(origin).map(c=>c.charCodeAt(0).toString(16)).join('');
+      const scripts=await chrome.scripting.getRegisteredContentScripts({ids:[id]});
+      if(!scripts.length)await chrome.scripting.registerContentScripts([{id,matches:[match],js:files,runAt:'document_idle',persistAcrossSessions:true}]);
+    }
+    await chrome.scripting.executeScript({target:{tabId:tab.id},files});
     return {ok:true};
   }
   if(!privateFrame(sender))throw Error('Only protected extension-origin frames can use private APIs');
@@ -146,7 +161,7 @@ async function handle(msg,sender){
   if(msg.type==='RESIZE_FRAME'||msg.type==='RESCAN'){
     const safe=msg.type==='RESCAN'?{type:msg.type,bridge:msg.bridge}:{type:'RESIZE_FRAME',bridge:msg.bridge,messageId:msg.messageId||'',height:msg.height,hideOriginal:msg.hideOriginal===true,hideFrame:msg.hideFrame===true};
     const result=await chrome.tabs.sendMessage(entry.tabId,safe);
-    return result?.ok?{ok:true}:{ok:false,error:result?.error||'Page adapter unavailable'};
+    return result?.ok?{ok:true,...(Number.isFinite(result.appliedHeight)?{appliedHeight:result.appliedHeight}:{})}:{ok:false,error:result?.error||'Page adapter unavailable'};
   }
   if(msg.type==='CLEAR_SESSION'){
     await chrome.storage.session.remove([SESS(sessionId),DRAFT(sessionId)]);
@@ -189,4 +204,4 @@ if(chrome.tabs?.onRemoved?.addListener){
   });
 }
 
-if(chrome.action?.onClicked)chrome.action.onClicked.addListener(()=>chrome.tabs.create({url:chrome.runtime.getURL('private/workspace.html')}));
+// Toolbar popup handles explicit per-site activation and document tools.

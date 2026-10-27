@@ -74,6 +74,9 @@ let previewId=null;
 let busy=false;
 let lastApprovedDecisions=null;
 let protectionEnabled=true;
+let attachment=null,documentLoading=false,documentController;
+function invalidateDraft(){analysisController?.abort();revision++;current=null;previewId=null;$('preview').hidden=true;$('permission').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});}
+function fitDraft(){const d=$('draft');d.style.height='36px';d.style.height=Math.min(120,Math.max(36,d.scrollHeight))+'px';resize();}
 function updateProtectionUI(enabled){
   protectionEnabled=Boolean(enabled);
   const button=$('protection-toggle');
@@ -94,7 +97,7 @@ function updateProtectionUI(enabled){
   resize();
 }
 function status(text,error=false){const el=$('status');el.textContent=text;el.className='status '+(error?'error':'ok');}
-function markBusy(on){for(const id of ['confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
+function markBusy(on){for(const id of ['attach','remove-attachment','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
 function makeChoice(e){
   const box=document.createElement('div');box.className='choice';
   const heading=document.createElement('div');heading.className='choice-header';
@@ -150,10 +153,11 @@ async function prepareAndSend(decisions={}){
   finally{markBusy(false);resize();}
 }
 async function doSend(){
-  if(busy||!protectionEnabled)return;
+  if(busy||documentLoading||!protectionEnabled)return;
   if(current && !$('permission').hidden){status('Choose disclosure settings and click Approve & send.',true);return;}
-  const text=$('draft').value;
+  const text=$('draft').value+(attachment?'\n\nDocument text (extracted locally):\n'+attachment.text:'');
   if(!text.trim())return;
+  if(text.length>12000){status('Prompt and document exceed 12,000 characters. Use a shorter document or excerpt.',true);return;}
   current=null;previewId=null;$('preview').hidden=true;
   const started=revision;
   markBusy(true);
@@ -184,6 +188,30 @@ async function initComposer(){
   $('composer').hidden=false;
   $('composer').dataset.protection='on';
   $('draft').maxLength=12000;
+  $('draft').addEventListener('input',fitDraft);
+  document.querySelector('.tools').addEventListener('toggle',resize);
+  $('attach').addEventListener('click',()=>{if(!busy&&!documentLoading)$('attachment-file').click();});
+  $('remove-attachment').addEventListener('click',()=>{
+    documentController?.abort();documentLoading=false;attachment=null;$('attachment-file').value='';
+    $('attachment-info').hidden=true;$('remove-attachment').hidden=true;$('attach').disabled=false;
+    invalidateDraft();status('Document removed');resize();
+  });
+  $('attachment-file').addEventListener('change',async()=>{
+    const file=$('attachment-file').files[0];if(!file)return;
+    documentController?.abort();const controller=new AbortController();documentController=controller;
+    invalidateDraft();attachment=null;documentLoading=true;$('attach').disabled=true;
+    $('attachment-info').hidden=false;$('attachment-info').textContent='Reading document locally…';$('remove-attachment').hidden=false;resize();
+    try{
+      const {readDocument}=await import('./documents.mjs');
+      const result=await readDocument(file,{signal:controller.signal});
+      if(controller!==documentController||controller.signal.aborted)return;
+      if(result.text.length+35+$('draft').value.length>12000)throw Error('Prompt and document exceed 12,000 characters. Choose a shorter PDF or excerpt.');
+      attachment=result;
+      $('attachment-info').textContent=`Document attached · ${result.pages} page(s) · text only. Original file stays local. Review before sending.`;
+      status('Document ready for private review');
+    }catch(e){if(!controller.signal.aborted){attachment=null;$('attachment-info').textContent=e.message;status('Document not attached',true);}}
+    finally{if(controller===documentController){documentLoading=false;$('attach').disabled=busy;$('attachment-file').value='';resize();}}
+  });
   $('draft').addEventListener('input',()=>{analysisController?.abort();revision++;current=null;previewId=null;$('preview').hidden=true;$('permission').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});message({type:'SAVE_EDITOR',text:$('draft').value}).catch(()=>{});});
   $('preview-cancel').addEventListener('click',()=>{if(busy)return;previewId=null;current=null;$('preview').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});resize();});
   $('confirm-send').addEventListener('click',async()=>{
@@ -191,14 +219,14 @@ async function initComposer(){
     markBusy(true);$('draft').readOnly=true;
     try{
       const result=await message({type:'PREPARE_AND_SEND',draftId:current.draft_id,previewId});
-      $('draft').value='';await message({type:'SAVE_EDITOR',text:''});current=null;previewId=null;$('preview').hidden=true;
+      $('draft').value='';attachment=null;$('attachment-info').hidden=true;$('remove-attachment').hidden=true;fitDraft();await message({type:'SAVE_EDITOR',text:''});current=null;previewId=null;$('preview').hidden=true;
       status('Sanitized prompt handed to the AI website');$('notice').textContent=`Protected ${result.replacements} field(s). Review the chat to confirm delivery.`;
     }catch(e){status(e.message,true);showRecovery(e);}
     finally{$('draft').readOnly=false;markBusy(false);resize();}
   });
   $('send').addEventListener('click',doSend);
   $('protection-toggle').addEventListener('click',async()=>{
-    if(busy)return;
+    if(busy||documentLoading)return;
     $('protection-toggle').disabled=true;
     try{
       const next=!protectionEnabled;

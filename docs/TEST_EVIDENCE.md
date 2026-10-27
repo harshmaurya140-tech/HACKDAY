@@ -2,7 +2,7 @@
 
 Local run on macOS ARM64, Node 25.6.0, Playwright 1.56.1 / isolated Chromium 141.0.7390.37:
 
-- JavaScript suites: 48 passed. Includes baseline contracts, worker bridge integration, duplicate-send serialization, mandatory previews, origin rejection, draft recovery, credential rules, Unicode restoration and image dimension budgets.
+- JavaScript suites: 50 passed. Includes baseline contracts, worker bridge integration, duplicate-send serialization, mandatory previews, origin rejection, draft recovery, credential rules, Unicode restoration and image dimension budgets.
 - Source syntax checks passed.
 - Real packaged ONNX/WASM BERT inference passed on synthetic name/company/location and a long-window input. Observed short-example startup/inference: 367 ms in the latest source run (368 ms from the extracted ZIP); not a general benchmark.
 - Real bundled English OCR recognized five words from a synthetic rasterized PDF with external HTTP blocked.
@@ -21,3 +21,9 @@ No claims are made for multilingual accuracy, scanned-document completeness, han
 ## Local checkout follow-up
 
 Development resumed in the verified local checkout on the existing `codex/incognix-release` branch. Model hashes passed in the copied checkout. Added full PDF extraction deadlines, AbortSignal cleanup and independent document-loading state so typing does not discard a pending attachment. Six real browser rejection cases cover malformed UTF-8, NUL text, malformed PDF, unsupported DOCX, blank PDF and page-limit violations. The expanded browser suite passed, including typing during delayed file loading. Chrome semantic inference remains mocked in these UI checks.
+
+## 0.8.1 composer documents and optional sites
+
+Added browser-fixture tests for attaching a synthetic text PDF inside each integrated composer, mandatory preview, masked email in outgoing document text, original filename exclusion, successful send, attachment cleanup and malformed PDF rejection. All three passed. Idle composers measured below 190 px, and fixed-bottom inputs remained inside a 420 × 500 viewport. A multiline contenteditable failure found by these tests was fixed using text nodes and line breaks.
+
+Generic-adapter tests use a separate HTTPS fixture and verify unique labelled-input selection, refusal of ambiguous chat inputs and exclusion of unrelated fields. Background tests verify optional permission requirements, revocation, origin binding and frame-height forwarding. These do not establish compatibility with all live AI sites. UI suites mock semantic inference; real bundled NER/OCR checks still run separately.

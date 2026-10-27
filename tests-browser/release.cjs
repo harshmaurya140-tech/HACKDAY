@@ -132,7 +132,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
   assert.equal((await host.evaluate(()=>window.sent)).length,0,'preview is mandatory');
   assert(!(await frame.locator('#outgoing').inputValue()).includes('canary@example.org'));
   await frame.locator('#confirm-send').click();
-  await frame.locator('#status').filter({hasText:'Sanitized prompt handed'}).waitFor();
+  await frame.locator('#status').filter({hasText:'Sanitized prompt handed'}).waitFor().catch(async e=>{throw Error((await frame.locator('#status').textContent())+'; native='+JSON.stringify(await native.evaluate(e=>e.value??e.innerText))+'; '+e.message);});
   assert.equal((await host.evaluate(()=>window.sent)).length,1);
   assert(!(await host.evaluate(()=>window.sent[0])).includes('canary@example.org'));
   await frame.locator('#draft').fill('Old draft');await frame.locator('#send').click();await frame.locator('#draft').fill('Revised draft');
@@ -140,6 +140,31 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
   assert.equal((await host.evaluate(()=>window.sent)).length,1,'stale analysis must not send');
   assert(!(await host.locator('body').textContent()).includes('canary@example.org'));
   console.log('PASS installed extension fixture: preview, send, OFF/ON, private draft isolation, stale analysis',new URL(site.url).host);
+  // Attach directly inside the protected composer; original bytes/name stay private.
+  await frame.locator('#draft').fill('Summarize the attached report.');
+  await frame.locator('#attachment-file').setInputFiles({name:'PRIVATE_FILENAME.pdf',mimeType:'application/pdf',buffer:Buffer.from(bytes)});
+  await frame.locator('#attachment-info').filter({hasText:'Document attached'}).waitFor();
+  assert(!(await host.locator('body').textContent()).includes('canary@example.org'));
+  await frame.locator('#send').click();await frame.locator('#preview').waitFor({state:'visible'});
+  const pdfPreview=await frame.locator('#outgoing').inputValue();
+  assert(pdfPreview.includes('Document text (extracted locally)'));
+  assert(!pdfPreview.includes('canary@example.org')&&!pdfPreview.includes('PRIVATE_FILENAME'));
+  await frame.locator('#confirm-send').click();await frame.locator('#status').filter({hasText:'Sanitized prompt handed'}).waitFor().catch(async e=>{throw Error((await frame.locator('#status').textContent())+'; native='+JSON.stringify(await native.evaluate(e=>e.value??e.innerText))+'; '+e.message);});
+  assert.equal((await host.evaluate(()=>window.sent)).length,2);
+  assert.equal(await frame.locator('#attachment-info').isVisible(),false);
+  // Idle editor should fit a short native-style input, rather than a dashboard.
+  const bounds=await host.locator('iframe[title="Protected AI composer"]').boundingBox();
+  assert(bounds.height<190,'idle protected composer must remain compact');
+  await host.screenshot({path:'artifacts/composer-'+new URL(site.url).hostname+'.png'});
+  await frame.locator('#attachment-file').setInputFiles({name:'broken.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-invalid')});
+  await frame.locator('#status').filter({hasText:'Document not attached'}).waitFor();
+  assert.equal((await host.evaluate(()=>window.sent)).length,2,'failed PDF must not auto-send');
+  console.log('PASS in-composer PDF review/send, invalid PDF rejection and compact layout',new URL(site.url).host);
+  await host.setViewportSize({width:420,height:500});
+  await host.evaluate(()=>{const f=document.querySelector('iframe[title="Protected AI composer"]');Object.assign(f.parentElement.style,{position:'fixed',bottom:'12px',left:'10px',width:'400px',margin:'0'});});
+  await host.waitForTimeout(150);
+  const compact=await host.locator('iframe[title="Protected AI composer"]').boundingBox();
+  assert(compact.y>=0&&compact.y+compact.height<=500,'fixed-bottom input remains within a small viewport');
   await host.close();
  }
 
