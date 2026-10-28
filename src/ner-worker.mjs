@@ -1,5 +1,6 @@
 import * as ort from 'onnxruntime-web/wasm';
 import {Tokenizer} from '@huggingface/tokenizers';
+import {alignedTokens} from './ner-alignment.mjs';
 let loaded;
 async function load(){
  if(!loaded)loaded=(async()=>{
@@ -15,14 +16,7 @@ async function load(){
 async function extract(text){
  if(typeof text!=='string'||text.length>12000)throw Error('NER input limit');
  const {tokenizer,session,labels}=await load();
- const pieces=[...text.matchAll(/[\p{L}\p{M}\p{N}_]+|[^\s]/gu)];
- const ids=[],offsets=[];
- for(const m of pieces){
-  const encoded=tokenizer.encode(m[0],{add_special_tokens:false}).ids;
-  for(const id of encoded){ids.push(id);offsets.push([m.index,m.index+m[0].length]);}
- }
- const full=tokenizer.encode(text).ids;
- if(full.length!==ids.length+2||ids.some((id,i)=>id!==full[i+1]))throw Error('NER tokenizer alignment unavailable for this input');
+ const {ids,offsets,full}=alignedTokens(tokenizer,text);
  const spans=[];
  for(let start=0;start<ids.length;start+=192){
   const end=Math.min(start+256,ids.length),input=[full[0],...ids.slice(start,end),full.at(-1)],dims=[1,input.length];

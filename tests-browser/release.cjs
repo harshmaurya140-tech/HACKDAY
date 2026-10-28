@@ -44,6 +44,9 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
  const ner=await page.evaluate(()=>IncognixNER.extract('Sarah Johnson works at Microsoft in London.'));
  assert(ner.some(e=>e.type==='PERSON'&&e.text.includes('Sarah')),'real NER must identify unseen synthetic name');
  assert(ner.some(e=>e.text.includes('London')),'real NER must identify location');
+ const complexNER=await page.evaluate(()=>IncognixNER.extract('My name is Nora Vale, and I work at Example Technologies in London. My email is nora@example.org. My date of birth is 15 March 2002. Yesterday, ₹1,25,000 was withdrawn from my account without permission. Draft a complaint, calculate my age as of 28 October 2026, and prepare a complete incident report.'));
+ assert(complexNER.some(e=>e.type==='PERSON'&&e.text.includes('Nora')),'currency-containing multi-task prompt must run real NER');
+ console.log('PASS real NER on multi-task currency prompt');
  const nerStartupMs=Date.now()-started;
  console.log('PASS real bundled ONNX/WASM inference',nerStartupMs,'ms',ner.map(e=>e.type));
  const late=await page.evaluate(()=>{const text='This is an ordinary sentence. '.repeat(130)+'Emily Carter lives in Paris.';return IncognixNER.extract(text);});

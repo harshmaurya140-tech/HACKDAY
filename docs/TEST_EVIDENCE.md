@@ -35,3 +35,9 @@ Generic-adapter tests use a separate HTTPS fixture and verify unique labelled-in
 ## 0.8.3 attachment follow-up
 
 Added actual scanned-PDF OCR on an image-only synthetic PDF, cancelled-document rejection, clipboard-image ingestion in each of the three provider fixtures, and replacement-file drop checks that invalidate the prior preview. OCR worker cancellation has a separate regression for cancellation during startup and late worker cleanup. Generic adapter tests cover plain-text send controls, hidden duplicates and ambiguous visible controls. Semantic inference remains mocked in automated UI tests. No new signed-in acceptance is claimed for this revision.
+
+## 0.8.4 currency input regression — 2026-10-29
+
+Reproduced the bundled BERT tokenizer alignment exception with `₹1,25,000`. The old custom punctuation splitter disagreed with the model tokenizer. Non-whitespace source segments now retain tokenizer-native punctuation/normalization, with conservative word-level source spans and the full sequence equality guard still enforced.
+
+Passed syntax checks, all JavaScript suites (including real-tokenizer Unicode/currency regression), and the complete installed-extension browser suite. Actual ONNX/WASM inference succeeded for a synthetic multi-task currency prompt. OCR/PDF and ChatGPT/Claude/Gemini fixture flows passed. Contextual Chrome AI is mocked in those fixture flows; this is not a signed-in end-to-end pass. The previously observed new-chat restoration issue remains under investigation.
