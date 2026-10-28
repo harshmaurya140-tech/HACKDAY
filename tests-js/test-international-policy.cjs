@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),core=require('../extension/core/privacy-core');
+const values=['4111 1111 1111 1111','123-45-6789','GB82 WEST 1234 5698 7654 32','sk_test_FAKECANARY123456','928374','-----BEGIN PRIVATE KEY-----\nFAKECANARY\n-----END PRIVATE KEY-----'];
+const text=`Card ${values[0]}. SSN ${values[1]}. IBAN ${values[2]}. api_key="${values[3]}"; OTP: ${values[4]}. ${values[5]}`;
+const entities=core.mergeDetected(text,[]),session=core.newSession(),out=core.prepare(session,{text,entities});
+for(const v of values)assert(!out.sanitized_text.includes(v),'credential not protected');
+assert.equal(core.restore(session,out.sanitized_text).text,text);
+for(const type of ['SSN','CVV','PIN','OTP','PRIVATE_KEY','IBAN'])assert(!core.canAskForDisclosure(type));
+const company='The project Blue Heron has a secret budget.';
+const terms=core.confidentialTerms(company,['Blue Heron']);assert.equal(terms[0].text,'Blue Heron');assert(!terms[0].necessary);
+assert.throws(()=>core.prepare(core.newSession(),{text:company,entities:core.mergeDetected(company,terms)},{e1:{mode:'EXACT'}}),/protected/);
+const unicode='Jose\u0301 and José';const s=core.newSession();const e=[{type:'PERSON',text:'Jose\u0301',start:0,end:5},{type:'PERSON',text:'José',start:10,end:14}];const p=core.prepare(s,{text:unicode,entities:core.mergeDetected(unicode,e)});assert.equal(core.restore(s,p.sanitized_text).text,unicode);
+console.log('PASS international credential validators, confidential terms, and lossless Unicode restoration');

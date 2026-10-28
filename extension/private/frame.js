@@ -33,9 +33,9 @@ let lastResizeReady=null;
 async function resize(){
   const active=mode==='response'?$('response'):$('composer');
   if(!active || active.hidden)return;
-  // scrollHeight included the frame's viewport, causing a +15px feedback loop.
-  // Measure the actual content box instead, which is independent of iframe height.
-  const height=Math.ceil(active.getBoundingClientRect().height)+5;
+  // Measure this main element, never document/body scrollHeight (which includes
+  // the iframe viewport). Its overflow lets attachment/review panels expand.
+  const height=Math.ceil(Math.max(active.getBoundingClientRect().height,active.scrollHeight))+5;
   if(height===lastResize && (mode!=='response' || responseReady===lastResizeReady))return;
   lastResize=height;
   lastResizeReady=responseReady;
@@ -68,16 +68,22 @@ if('ResizeObserver' in window){
   watch.observe(mode==='response'?$('response'):$('composer'));
 }
 let current=null;
+let revision=0;
+let analysisController;
+let previewId=null;
 let busy=false;
 let lastApprovedDecisions=null;
 let protectionEnabled=true;
+let attachment=null,documentLoading=false,documentController;
+function invalidateDraft(){analysisController?.abort();revision++;current=null;previewId=null;$('preview').hidden=true;$('permission').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});}
+function fitDraft(){const d=$('draft');d.style.height='36px';d.style.height=Math.min(120,Math.max(36,d.scrollHeight))+'px';resize();}
 function updateProtectionUI(enabled){
   protectionEnabled=Boolean(enabled);
   const button=$('protection-toggle');
   if(!button)return;
   button.setAttribute('aria-checked',String(protectionEnabled));
   button.setAttribute('aria-label',protectionEnabled?'Turn privacy protection off':'Turn privacy protection on');
-  $('protection-state').textContent=protectionEnabled?'Protection on':'Protection off';
+  $('protection-state').textContent=protectionEnabled?'Incognix · on':'Incognix · off';
   $('composer').dataset.protection=protectionEnabled?'on':'off';
   $('send').disabled=!protectionEnabled||busy;
   $('approve').disabled=!protectionEnabled||busy;
@@ -91,7 +97,7 @@ function updateProtectionUI(enabled){
   resize();
 }
 function status(text,error=false){const el=$('status');el.textContent=text;el.className='status '+(error?'error':'ok');}
-function markBusy(on){busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
+function markBusy(on){for(const id of ['attach','remove-attachment','extracted-text','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
 function makeChoice(e){
   const box=document.createElement('div');box.className='choice';
   const heading=document.createElement('div');heading.className='choice-header';
@@ -134,26 +140,34 @@ function showRecovery(error){
 async function prepareAndSend(decisions={}){
   if(!current||!protectionEnabled)return;
   lastApprovedDecisions=decisions;
+  const snapshot=revision;
   markBusy(true);
   try{
-    const done=await message({type:'PREPARE_AND_SEND',draftId:current.draft_id,decisions});
-    $('draft').value='';$('permission').hidden=true;$('native-recovery').hidden=true;current=null;lastApprovedDecisions=null;
-    status('Sanitized prompt handed to the AI website');
-    $('notice').textContent=`Protected ${done.replacements} field(s). Review the chat to confirm delivery.`;
-    await message({type:'RESCAN'}).catch(()=>{});
+    const preview=await message({type:'PREVIEW',draftId:current.draft_id,decisions});
+    if(snapshot!==revision)throw Error('Draft changed; review again.');
+    previewId=preview.previewId;$('outgoing').value=preview.sanitized_text;
+    $('preview').hidden=false;$('permission').hidden=true;status('Review exactly what will leave your browser');
+    return;
+
   }catch(e){status(e.message,true);showRecovery(e);$('notice').textContent='Nothing unprotected was intentionally submitted.';}
   finally{markBusy(false);resize();}
 }
 async function doSend(){
-  if(busy||!protectionEnabled)return;
+  if(busy||documentLoading||!protectionEnabled)return;
   if(current && !$('permission').hidden){status('Choose disclosure settings and click Approve & send.',true);return;}
-  const text=$('draft').value;
+  const text=$('draft').value+(attachment?'\n\nDocument text (extracted locally):\n'+attachment.text:'');
   if(!text.trim())return;
+  if(text.length>12000){status('Prompt and document exceed 12,000 characters. Use a shorter document or excerpt.',true);return;}
+  current=null;previewId=null;$('preview').hidden=true;
+  const started=revision;
   markBusy(true);
   try{
     status('Scanning locally…');
-    const local=await LocalPrivacyAI.analyze(text,{onStatus:msg=>status(msg)});
+    analysisController=new AbortController();
+    const local=await LocalPrivacyAI.analyze(text,{onStatus:msg=>status(msg),signal:analysisController.signal});
+    if(started!==revision)throw Error('Draft changed. Review it again.');
     const analysed=await message({type:'ANALYZE',text,entities:local.entities});
+    if(started!==revision){await message({type:'CANCEL_DRAFT'});throw Error('Draft changed. Review it again.');}
     current=analysed;
     $('native-recovery').hidden=true;
     const needed=groupPermissionEntities(analysed.entities);
@@ -173,9 +187,60 @@ async function doSend(){
 async function initComposer(){
   $('composer').hidden=false;
   $('composer').dataset.protection='on';
+  $('draft').maxLength=12000;
+  $('draft').addEventListener('input',fitDraft);
+  document.querySelector('.tools').addEventListener('toggle',resize);
+  $('attachment-review').addEventListener('toggle',resize);
+  $('extracted-text').addEventListener('input',()=>{if(attachment){attachment.text=$('extracted-text').value;invalidateDraft();}});
+  $('attach').addEventListener('click',()=>{if(!busy&&!documentLoading)$('attachment-file').click();});
+  $('remove-attachment').addEventListener('click',()=>{
+    documentController?.abort();documentLoading=false;attachment=null;$('attachment-file').value='';
+    $('attachment-info').hidden=true;$('attachment-review').hidden=true;$('extracted-text').value='';$('remove-attachment').hidden=true;$('attach').disabled=false;
+    invalidateDraft();status('Document removed');resize();
+  });
+  async function loadAttachment(file){
+    if(!file||busy||!protectionEnabled)return;
+    $('attachment-review').hidden=true;$('extracted-text').value='';
+    documentController?.abort();const controller=new AbortController();documentController=controller;
+    invalidateDraft();attachment=null;documentLoading=true;$('attach').disabled=true;
+    $('attachment-info').hidden=false;$('attachment-info').textContent='Reading document locally…';$('remove-attachment').hidden=false;resize();
+    try{
+      const {readDocument}=await import('./documents.mjs');
+      const isImage=/\.(png|jpe?g)$/i.test(file.name);
+      const result=isImage?await (await import('./image-text.mjs')).readImage(file,{signal:controller.signal,onProgress:p=>{if(!controller.signal.aborted)$('attachment-info').textContent=`Reading image locally… ${p}%`;}}):await readDocument(file,{signal:controller.signal,ocr:true,onProgress:p=>{if(controller===documentController&&!controller.signal.aborted)$('attachment-info').textContent=`Reading scanned PDF locally… ${p}%`;}});
+      if(controller!==documentController||controller.signal.aborted)return;
+      if(result.text.length+35+$('draft').value.length>12000)throw Error('Prompt and document exceed 12,000 characters. Choose a shorter PDF or excerpt.');
+      attachment=result;$('attachment-review').hidden=false;$('attachment-review').open=Boolean(result.ocr);$('extracted-text').value=result.text;
+      $('attachment-info').textContent=`${result.ocr?(isImage?'Image text ready':'Scanned PDF text ready'):'Document attached'} · ${result.pages} page(s) · original stays local. Review extracted text before sending.`;
+      status('Document ready for private review');
+    }catch(e){if(!controller.signal.aborted){attachment=null;$('attachment-info').textContent=e.message;status('Document not attached',true);}}
+    finally{if(controller===documentController){documentLoading=false;$('attach').disabled=busy;$('attachment-file').value='';resize();}}
+  }
+  $('attachment-file').addEventListener('change',()=>loadAttachment($('attachment-file').files[0]));
+  const ingestFiles=(event,files)=>{
+    if(!files.length)return;
+    event.preventDefault();event.stopPropagation();
+    if(files.length!==1){status('Attach one file at a time. Your current attachment is unchanged.',true);return;}
+    loadAttachment(files[0]);
+  };
+  $('composer').addEventListener('dragover',event=>{if([...event.dataTransfer.types].includes('Files')){event.preventDefault();event.dataTransfer.dropEffect='copy';}});
+  $('composer').addEventListener('drop',event=>ingestFiles(event,[...event.dataTransfer.files]));
+  $('draft').addEventListener('paste',event=>ingestFiles(event,[...(event.clipboardData?.files||[])]));
+  $('draft').addEventListener('input',()=>{analysisController?.abort();revision++;current=null;previewId=null;$('preview').hidden=true;$('permission').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});message({type:'SAVE_EDITOR',text:$('draft').value}).catch(()=>{});});
+  $('preview-cancel').addEventListener('click',()=>{if(busy)return;previewId=null;current=null;$('preview').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});resize();});
+  $('confirm-send').addEventListener('click',async()=>{
+    if(busy||!current||!previewId)return;
+    markBusy(true);$('draft').readOnly=true;
+    try{
+      const result=await message({type:'PREPARE_AND_SEND',draftId:current.draft_id,previewId});
+      $('draft').value='';attachment=null;$('attachment-info').hidden=true;$('attachment-review').hidden=true;$('extracted-text').value='';$('remove-attachment').hidden=true;fitDraft();await message({type:'SAVE_EDITOR',text:''});current=null;previewId=null;$('preview').hidden=true;
+      status('Sanitized prompt handed to the AI website');$('notice').textContent=`Protected ${result.replacements} field(s). Review the chat to confirm delivery.`;
+    }catch(e){status(e.message,true);showRecovery(e);}
+    finally{$('draft').readOnly=false;markBusy(false);resize();}
+  });
   $('send').addEventListener('click',doSend);
   $('protection-toggle').addEventListener('click',async()=>{
-    if(busy)return;
+    if(busy||documentLoading)return;
     $('protection-toggle').disabled=true;
     try{
       const next=!protectionEnabled;
@@ -183,7 +248,7 @@ async function initComposer(){
       if(!response?.ok)throw Error('Could not change protection state');
       // Leave any raw draft in the private extension textarea. Never copy it
       // into the website composer when the user turns protection off.
-      if(next){current=null;lastApprovedDecisions=null;$('permission').hidden=true;}
+      revision++;previewId=null;$('preview').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});if(next){current=null;lastApprovedDecisions=null;$('permission').hidden=true;}
       updateProtectionUI(next);
     }catch(e){status(e.message,true);}
     finally{$('protection-toggle').disabled=false;resize();}
@@ -225,7 +290,7 @@ async function initComposer(){
     if(!confirm('Clear the private mapping for this chat? Restoring earlier placeholders will no longer work.'))return;
     try{await message({type:'CLEAR_SESSION'});status('Mappings cleared');}catch(e){status(e.message,true);}
   });
-  try{await message({type:'HEALTH'});
+  try{const saved=await message({type:'LOAD_EDITOR'});if(revision===0&&!$('draft').value)$('draft').value=saved.text||'';await message({type:'HEALTH'});
     const available=await LocalPrivacyAI.availability();
     if(available==='unavailable')status('On-device AI unavailable; sending blocked',true);
     else if(available==='downloadable'||available==='downloading')status('Local AI download may be needed on Send');

@@ -15,6 +15,7 @@
       const match = path.match(/\/app\/([^/]+)/);
       return match ? `gemini:${match[1]}` : 'new';
     }
+    if(site==='generic'){const u=new URL(rawUrl);return u.origin+u.pathname+u.search+u.hash;}
     return 'new';
   }
   function createSessionNavigation(site, firstUrl, generateId) {

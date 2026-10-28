@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const {webcrypto}=require('node:crypto');let registrations=[];let handler,granted=false,url='https://other-ai.example/chat/one';const data={};
+const chrome={scripting:{getRegisteredContentScripts:async()=>registrations,registerContentScripts:async entries=>registrations.push(...entries)},runtime:{getURL:p=>'chrome-extension://test/'+p.replace(/^\//,''),onMessage:{addListener:f=>handler=f}},permissions:{contains:async()=>granted},storage:{session:{get:async k=>k===null?data:{[k]:data[k]},set:async o=>Object.assign(data,o),remove:async()=>{}}},tabs:{get:async()=>({url}),sendMessage:async()=>({ok:true,appliedHeight:99})}};
+vm.runInNewContext(fs.readFileSync('extension/background.js','utf8'),{chrome,URL,crypto:webcrypto,importScripts:()=>{},PrivacyCore:require('../extension/core/privacy-core.js')});
+const bridge='99999999-9999-4999-8999-999999999999';const call=(m,s)=>new Promise(r=>handler({...m,bridge},s,r));
+(async()=>{
+ const page={tab:{id:4},url};const frame={tab:{id:4},url:'chrome-extension://test/private/frame.html?bridge='+bridge};
+ assert.equal((await call({type:'REGISTER_TAB'},page)).ok,false);
+ granted=true;assert.equal((await call({type:'REGISTER_TAB'},page)).ok,true);
+ assert.equal((await call({type:'RESIZE_FRAME',height:99},frame)).appliedHeight,99);
+ url='https://another-ai.example/chat/one';assert.equal((await call({type:'LOAD_EDITOR'},frame)).ok,false,'a grant on a different origin must not authorize an old frame');
+ url=page.url;granted=false;assert.equal((await call({type:'LOAD_EDITOR'},frame)).ok,false,'revocation must block private APIs');
+ assert.equal((await call({type:'ENABLE_SITE',tabId:4},page)).ok,false,'page cannot enable sites');
+ assert.equal((await call({type:'ENABLE_ALL'},page)).ok,false,'page cannot enable all sites');
+ const popup={url:'chrome-extension://test/private/popup.html'};
+ assert.equal((await call({type:'ENABLE_ALL'},popup)).ok,false,'broad access requires grant');
+ granted=true;assert.equal((await call({type:'ENABLE_ALL'},popup)).ok,true);
+ assert.equal(registrations.length,1);assert.deepEqual(registrations[0].matches[0],'https://*/*');
+ await call({type:'ENABLE_ALL'},popup);assert.equal(registrations.length,1,'registration is idempotent');
+ console.log('PASS optional site grant, revocation, cross-origin binding and resize-budget bridge');
+})().catch(e=>{console.error(e);process.exitCode=1;});

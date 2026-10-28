@@ -52,7 +52,7 @@
     required:['assessments']
   };
   const NEVER_DISCLOSE_TYPES=new Set(['ACCOUNT','PAN','AADHAAR','CARD','ID','SECRET']);
-  const DISALLOWED_ALIASES=new Set(['BANK_ACCOUNT','ACCOUNT_NUMBER','CREDIT_CARD','PAYMENT_CARD','API_KEY','PASSWORD','NATIONAL_ID_NUMBER','GOVERNMENT_ID']);
+  const DISALLOWED_ALIASES=new Set(['BANK_ACCOUNT','ACCOUNT_NUMBER','CREDIT_CARD','PAYMENT_CARD','API_KEY','PASSWORD','NATIONAL_ID_NUMBER','GOVERNMENT_ID','SSN','SOCIAL_SECURITY_NUMBER','CVV','PIN','OTP','PRIVATE_KEY','ROUTING_NUMBER']);
   function isNeverDisclosable(type){
     const canonical=String(type||'').toUpperCase().replace(/[^A-Z]+/g,'_');
     return NEVER_DISCLOSE_TYPES.has(canonical)||DISALLOWED_ALIASES.has(canonical)||
@@ -169,7 +169,8 @@
     try{return await withTimeout(LanguageModel.availability(MODEL_LANGUAGE_OPTIONS),12000,'Chrome local model availability check');}
     catch{return 'unavailable';}
   }
-  async function analyze(text,{onStatus=()=>{}}={}){
+  async function analyze(text,{onStatus=()=>{},signal}={}){
+    signal?.throwIfAborted();
     if(typeof text!=='string'||!text.trim()||text.length>12000)throw Error('Invalid or too long private prompt');
     if(typeof LanguageModel==='undefined'||typeof LanguageModel.create!=='function'){
       throw Error('Chrome on-device AI is unavailable on this device. Protected sending is blocked.');
@@ -199,8 +200,11 @@
     }
     async function runStage(promptText,schema,parseResult,retryPrompt,label){
       for(let attempt=0;attempt<2;attempt++){
+        signal?.throwIfAborted();
         let model=null;
         const startupController=new AbortController();
+        const cancel=()=>{startupController.abort();try{model?.destroy?.()}catch{}};
+        signal?.addEventListener('abort',cancel,{once:true});
         try{
           onStatus(attempt?'Restarting local model safely…':(firstSession?'Initializing Chrome local AI…':'Initializing local necessity model…'));
           model=await withTimeout(LanguageModel.create({
@@ -214,10 +218,13 @@
             }
           }),firstSession?240000:60000,'Chrome local AI startup',()=>startupController.abort());
           firstSession=false;
+          onStatus('Analyzing privately on this device…');
           const onePrompt=async(input,time,labelText)=>{
             const controller=new AbortController();
-            return withTimeout(model.prompt(input,{signal:controller.signal,responseConstraint:schema}),
-              time,labelText,()=>controller.abort());
+            signal?.throwIfAborted();
+            const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});
+            try{return await withTimeout(model.prompt(input,{signal:controller.signal,responseConstraint:schema}),
+              time,labelText,abort);}finally{signal?.removeEventListener('abort',abort);}
           };
           const raw=await onePrompt(promptText,90000,label);
           try{return parseResult(raw);}
@@ -228,6 +235,7 @@
             return parseResult(await onePrompt(retryPrompt,45000,label+' format retry'));
           }
         }catch(e){
+          if(signal?.aborted)throw Error('Analysis cancelled; nothing was sent.');
           if(attempt===0&&transientModelFailure(e)){
             onStatus('Chrome local AI encountered an internal error; retrying safely…');
             await new Promise(resolve=>setTimeout(resolve,300));
@@ -239,6 +247,7 @@
           if(/Invalid local AI|structured JSON|Unexpected token/i.test(String(e?.message||'')))throw Error('Invalid local AI output; sending is blocked.');
           throw Error('Chrome local AI failed in '+label+'; sending is blocked ('+String(e?.name||'runtime error').slice(0,50)+').');
         }finally{
+          signal?.removeEventListener('abort',cancel);
           try{model?.destroy?.()}catch{}
         }
       }
@@ -276,6 +285,15 @@
         'Local privacy detection');
       sensitiveSpans=detected.flatMap(e=>findSpans(text,e));
     }
+      if(root.IncognixNER?.extract){
+        onStatus('Running bundled local NER…');
+        signal?.throwIfAborted();
+        const extra=await root.IncognixNER.extract(text);
+        signal?.throwIfAborted();
+        if(!Array.isArray(extra)||extra.some(e=>!Number.isInteger(e.start)||!Number.isInteger(e.end)||e.start<0||e.end>text.length||text.slice(e.start,e.end)!==e.text))throw Error('Invalid bundled NER spans; sending blocked');
+        sensitiveSpans=[...sensitiveSpans,...extra];
+        detectorName='bert-ner-q8+chrome-contextual';
+      }
       const assessable=sensitiveSpans.filter(e=>!isNeverDisclosable(e.type));
       if(assessable.length===0){
         return {entities:sensitiveSpans,detector:detectorName,necessity:'none-needed'};

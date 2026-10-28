@@ -19,12 +19,13 @@ function conversationKey(url){
     if(u.hostname==='gemini.google.com'){
       const m=path.match(/^\/app\/([^/]+)/);return m?'gemini:'+m[1]:null;
     }
+    if(!allowedHosts.has(u.hostname))return u.origin+u.pathname+u.search+u.hash;
   }catch{}
   return null;
 }
-function allowed(url){try{const u=new URL(url);return u.protocol==='https:'&&allowedHosts.has(u.hostname);}catch{return false;}}
+async function allowed(url){try{const u=new URL(url);return u.protocol==='https:'&&(allowedHosts.has(u.hostname)||await chrome.permissions?.contains({origins:[u.origin+'/*']}));}catch{return false;}}
 function privateFrame(sender){
-  try{const u=new URL(sender.url);return u.origin===new URL(chrome.runtime.getURL('/')).origin && u.pathname==='/private/frame.html';}
+  try{const u=new URL(sender.url);const own=new URL(chrome.runtime.getURL('/'));return u.protocol===own.protocol&&u.host===own.host && u.pathname==='/private/frame.html';}
   catch{return false;}
 }
 async function channel(bridge,sender){
@@ -33,7 +34,7 @@ async function channel(bridge,sender){
   if(!entry||!Number.isInteger(entry.tabId))throw Error('Privacy session missing. Refresh the page.');
   if(sender.tab?.id!==entry.tabId)throw Error('Private frame does not belong to this tab');
   const tab=await chrome.tabs.get(entry.tabId);
-  if(!allowed(tab.url))throw Error('Unsupported AI website');
+  if(!await allowed(tab.url)||entry.origin!==new URL(tab.url).origin)throw Error('Unsupported AI website');
   const from=new URL(sender.url);
   if(from.searchParams.get('bridge')!==bridge)throw Error('Private frame channel mismatch');
   return entry;
@@ -43,7 +44,7 @@ async function putSession(sessionId,s){await chrome.storage.session.set({[SESS(s
 async function handle(msg,sender){
   if(!msg||typeof msg!=='object')throw Error('Invalid extension request');
   if(msg.type==='REGISTER_TAB'){
-    if(!sender.tab||!allowed(sender.url||sender.tab.url))throw Error('Untrusted registration');
+    if(!sender.tab||!await allowed(sender.url||sender.tab.url))throw Error('Untrusted registration');
     if(!/^[a-f0-9-]{36}$/.test(msg.bridge||''))throw Error('Invalid channel');
     const current=(await chrome.storage.session.get(KEY(msg.bridge)))[KEY(msg.bridge)];
     if(current && current.tabId!==sender.tab.id)throw Error('Channel already belongs to another tab');
@@ -55,14 +56,36 @@ async function handle(msg,sender){
     const index=conversation?INDEX(sender.tab.id,conversation):null;
     const previous=index?(await chrome.storage.session.get(index))[index]:null;
     const sessionId=current?.sessionId||previous||`tab${sender.tab.id}_${msg.bridge}`;
-    const updates={[KEY(msg.bridge)]:{tabId:sender.tab.id,sessionId}};
+    const updates={[KEY(msg.bridge)]:{tabId:sender.tab.id,sessionId,origin:new URL(sender.url||sender.tab.url).origin}};
     if(index)updates[index]=sessionId;
     await chrome.storage.session.set(updates);
     return {ok:true};
   }
+  if(msg.type==='ENABLE_ALL'){
+    if(sender.tab||sender.url!==chrome.runtime.getURL('private/popup.html'))throw Error('Only the toolbar can enable sites');
+    if(!await chrome.permissions.contains({origins:['https://*/*']}))throw Error('All-sites permission was not granted');
+    const id='incognix-all-sites';
+    const old=await chrome.scripting.getRegisteredContentScripts({ids:[id]});
+    if(!old.length)await chrome.scripting.registerContentScripts([{id,matches:['https://*/*'],excludeMatches:[...allowedHosts].map(h=>'https://'+h+'/*'),js:['content/adapters.js','content/session-navigation.js','content/native-draft.js','content/content.js'],runAt:'document_idle',persistAcrossSessions:true}]);
+    return {ok:true};
+  }
+  if(msg.type==='ENABLE_SITE'){
+    if(sender.tab||sender.url!==chrome.runtime.getURL('private/popup.html'))throw Error('Only the toolbar can enable a site');
+    const tab=await chrome.tabs.get(msg.tabId);
+    if(!await allowed(tab.url))throw Error('Site permission was not granted');
+    const origin=new URL(tab.url).origin,match=origin+'/*';
+    const files=['content/adapters.js','content/session-navigation.js','content/native-draft.js','content/content.js'];
+    if(!allowedHosts.has(new URL(tab.url).hostname)){
+      const id='incognix-'+Array.from(origin).map(c=>c.charCodeAt(0).toString(16)).join('');
+      const scripts=await chrome.scripting.getRegisteredContentScripts({ids:[id]});
+      if(!scripts.length)await chrome.scripting.registerContentScripts([{id,matches:[match],js:files,runAt:'document_idle',persistAcrossSessions:true}]);
+    }
+    await chrome.scripting.executeScript({target:{tabId:tab.id},files});
+    return {ok:true};
+  }
   if(!privateFrame(sender))throw Error('Only protected extension-origin frames can use private APIs');
   // All private requests other than HEALTH need an existing registered tab.
-  if(msg.type==='HEALTH')return {ok:true,mode:'extension-only',detector:'Chrome on-device AI interim (GLiNER2 not yet integrated)'};
+  if(msg.type==='HEALTH')return {ok:true,mode:'extension-only',detector:'Bundled BERT NER and Chrome contextual AI'};
   const entry=await channel(msg.bridge,sender);
   const sessionId=entry.sessionId;
   if(msg.type==='ANALYZE'){
@@ -71,17 +94,42 @@ async function handle(msg,sender){
     // Browser-local AI performed entity extraction and necessity assessment.
     // Validate every returned span before accepting; generic format validators
     // supplement extraction, never silently replace a failed local model.
-    const entities=PrivacyCore.mergeDetected(msg.text,msg.entities);
+    const settings=await chrome.storage.local?.get('incognixTerms');
+    const terms=String(settings?.incognixTerms||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    const entities=PrivacyCore.mergeDetected(msg.text,[...msg.entities,...PrivacyCore.confidentialTerms(msg.text,terms)]);
     const draftId=crypto.randomUUID();
     const draft={text:msg.text,entities,created:Date.now()};
     await chrome.storage.session.set({[DRAFT(sessionId)]:{id:draftId,...draft}});
     return {ok:true,draft_id:draftId,entities,needs_permission:entities.some(x=>x.necessary)};
   }
+  if(msg.type==='SAVE_EDITOR'||msg.type==='LOAD_EDITOR'){
+    const tab=await chrome.tabs.get(entry.tabId);
+    const route=conversationKey(tab.url)||new URL(tab.url).origin+new URL(tab.url).pathname;
+    const key=`ps-editor:${entry.tabId}:${route}`;
+    if(msg.type==='LOAD_EDITOR')return {ok:true,text:(await chrome.storage.session.get(key))[key]||''};
+    if(typeof msg.text!=='string'||msg.text.length>12000)throw Error('Invalid private draft');
+    if(msg.text)await chrome.storage.session.set({[key]:msg.text});else await chrome.storage.session.remove(key);
+    return {ok:true};
+  }
+  if(msg.type==='CANCEL_DRAFT'){
+    await chrome.storage.session.remove(DRAFT(sessionId));return {ok:true};
+  }
+  if(msg.type==='PREVIEW'){
+    const stored=(await chrome.storage.session.get(DRAFT(sessionId)))[DRAFT(sessionId)];
+    if(!stored||stored.id!==msg.draftId||Date.now()-stored.created>300000)throw Error('Draft expired; analyze again.');
+    const session=await getSession(sessionId);
+    const prepared=PrivacyCore.prepare(session,stored,msg.decisions||{});
+    const previewId=crypto.randomUUID();
+    await putSession(sessionId,session);
+    await chrome.storage.session.set({[DRAFT(sessionId)]:{...stored,preview:{id:previewId,prepared}}});
+    return {ok:true,previewId,...prepared};
+  }
   if(msg.type==='PREPARE_AND_SEND'){
     const stored=(await chrome.storage.session.get(DRAFT(sessionId)))[DRAFT(sessionId)];
     if(!stored||stored.id!==msg.draftId||Date.now()-stored.created>5*60*1000)throw Error('Draft expired; analyze again.');
+    if(!stored.preview||stored.preview.id!==msg.previewId)throw Error('Review outgoing text before sending.');
     const session=await getSession(sessionId);
-    const prepared=PrivacyCore.prepare(session,stored,msg.decisions||{});
+    const prepared=stored.preview.prepared;
     if(!prepared.sanitized_text.trim())throw Error('Empty sanitized prompt blocked');
     // Keep mapping ready for early response restoration. Preserve the draft
     // until the adapter actually confirms submission; failed sends must not
@@ -121,16 +169,23 @@ async function handle(msg,sender){
   if(msg.type==='RESIZE_FRAME'||msg.type==='RESCAN'){
     const safe=msg.type==='RESCAN'?{type:msg.type,bridge:msg.bridge}:{type:'RESIZE_FRAME',bridge:msg.bridge,messageId:msg.messageId||'',height:msg.height,hideOriginal:msg.hideOriginal===true,hideFrame:msg.hideFrame===true};
     const result=await chrome.tabs.sendMessage(entry.tabId,safe);
-    return result?.ok?{ok:true}:{ok:false,error:result?.error||'Page adapter unavailable'};
+    return result?.ok?{ok:true,...(Number.isFinite(result.appliedHeight)?{appliedHeight:result.appliedHeight}:{})}:{ok:false,error:result?.error||'Page adapter unavailable'};
   }
   if(msg.type==='CLEAR_SESSION'){
     await chrome.storage.session.remove([SESS(sessionId),DRAFT(sessionId)]);
+    const all=await chrome.storage.session.get(null);
+    await chrome.storage.session.remove(Object.keys(all).filter(k=>k.startsWith(`ps-editor:${entry.tabId}:`)));
     return {ok:true};
   }
   throw Error('Unknown request');
 }
+const queues=new Map();
 chrome.runtime.onMessage.addListener((m,sender,respond)=>{
-  handle(m,sender).then(respond).catch(e=>respond({ok:false,error:e.message}));
+  const key=String(sender.tab?.id)+':'+String(m?.bridge);
+  const task=(queues.get(key)||Promise.resolve()).catch(()=>{}).then(()=>handle(m,sender));
+  queues.set(key,task);
+  task.finally(()=>{if(queues.get(key)===task)queues.delete(key);}).catch(()=>{});
+  task.then(respond).catch(e=>respond({ok:false,error:e.message}));
   return true;
 });
 
@@ -143,6 +198,7 @@ if(chrome.tabs?.onRemoved?.addListener){
       const sessions=new Set();
       const keys=[];
       for(const [key,value] of Object.entries(all)){
+        if(key.startsWith(`ps-editor:${tabId}:`))keys.push(key);
         if(key.startsWith(`ps-conversation:${tabId}:`)){
           keys.push(key);if(typeof value==='string')sessions.add(value);
         }
@@ -155,3 +211,5 @@ if(chrome.tabs?.onRemoved?.addListener){
     }catch{/* No user data enters diagnostics. */}
   });
 }
+
+// Toolbar popup handles explicit per-site activation and document tools.

@@ -9,22 +9,27 @@
 <body>
   <main id="composer" hidden>
     <div class="top">
-      <button type="button" id="protection-toggle" class="protection-switch" role="switch" aria-checked="true" aria-label="Turn privacy protection off"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span id="protection-state">Protection on</span></button>
-      <span id="status" class="status">Checking local protection…</span>
+      <button type="button" id="protection-toggle" class="protection-switch" role="switch" aria-checked="true" aria-label="Turn privacy protection off"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span id="protection-state">Incognix · on</span></button>
+      <span id="status" class="status" role="status" aria-live="polite">Checking local protection…</span>
     </div>
-    <textarea id="draft" rows="3" placeholder="Ask anything privately… (Enter to send, Shift+Enter for newline)"></textarea>
+    <textarea id="draft" rows="1" placeholder="Message privately…"></textarea>
     <section id="permission" hidden>
       <div class="permission-title">Additional information may be required</div>
       <p>The local classifier thinks these fields may matter. Choose what you want the AI to receive. Nothing is revealed automatically.</p>
       <div id="choices"></div>
-      <div class="toolbar"><button id="cancel" class="secondary">Cancel</button><button id="approve">Approve & send</button></div>
+      <div class="toolbar"><button id="cancel" class="secondary">Cancel</button><button id="approve">Review outgoing text</button></div>
     </section>
+    <section id="preview" hidden><label for="outgoing">Exact text the chatbot will receive</label><textarea id="outgoing" readonly rows="5"></textarea><div class="toolbar"><button id="preview-cancel" class="secondary">Back to draft</button><button id="confirm-send">Send reviewed text</button></div></section>
     <div class="toolbar" id="native-recovery" hidden><button type="button" id="discard-native" class="secondary">Discard website draft</button></div>
+    <div id="attachment-info" role="status" hidden></div><details id="attachment-review" hidden><summary>Review extracted text</summary><textarea id="extracted-text" aria-label="Extracted attachment text" rows="4"></textarea><small>Correct OCR mistakes here before privacy analysis. Only reviewed text is shared.</small></details>
+    <input id="attachment-file" type="file" accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg" hidden>
     <div class="toolbar bottom">
+      <button id="attach" type="button" class="secondary" aria-label="Attach an image, PDF or text document" title="Attach, paste or drop an image, PDF or text file">＋</button>
+      <button id="remove-attachment" type="button" class="secondary" hidden>Remove document</button>
       <span class="notice" id="notice">Sensitive details stay local until you approve a disclosure.</span>
-      <button id="send">Send ➤</button>
+      <button id="send">Review ↑</button>
     </div>
-    <div class="foot"><button id="rescan" class="link">Refresh restored messages</button><button id="clear" class="link">Clear private mappings</button></div>
+    <details class="tools"><summary>Privacy tools</summary><div class="foot"><button id="rescan" class="link">Refresh restored messages</button><button id="clear" class="link">Clear private mappings</button></div></details>
   </main>
   <main id="off-toggle" hidden>
     <button type="button" id="reenable-protection" class="protection-switch" role="switch" aria-checked="false" aria-label="Turn privacy protection on"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span>Protection off</span></button>
@@ -36,8 +41,8 @@
   </main>
   <script src="../core/rich-response.js"></script>
   <script src="../core/gliner2-multi.js"></script>
-  <script src="vendor.bundle.js"></script>
-  <script src="gliner2-runtime.js"></script>
+  <script src="local-ner.js"></script>
+
   <script src="local-ai.js"></script>
   <script src="frame.js"></script>
 </body>

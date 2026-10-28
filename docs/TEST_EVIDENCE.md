@@ -1,0 +1,37 @@
+# Validation evidence — 2026-10-27
+
+Local run on macOS ARM64, Node 25.6.0, Playwright 1.56.1 / isolated Chromium 141.0.7390.37:
+
+- JavaScript suites: 50 passed. Includes baseline contracts, worker bridge integration, duplicate-send serialization, mandatory previews, origin rejection, draft recovery, credential rules, Unicode restoration and image dimension budgets.
+- Source syntax checks passed.
+- Real packaged ONNX/WASM BERT inference passed on synthetic name/company/location and a long-window input. Observed short-example startup/inference: 367 ms in the latest source run (368 ms from the extracted ZIP); not a general benchmark.
+- Real bundled English OCR recognized five words from a synthetic rasterized PDF with external HTTP blocked.
+- PDF extraction, reviewed text reconstruction, re-extraction canary checks, response restoration and stale-preview invalidation passed.
+- Raster PDF export re-rendered with black replacement pixels, empty text layer, no attachments and no original metadata canary. Full-page and partial-region exports passed; the partial-region test also verifies unchanged white pixels outside the selection. Broader document/coordinate cases still need validation.
+- Installed-extension ChatGPT, Claude and Gemini DOM fixtures passed private draft isolation, OFF/ON, guarded native draft handling, exact preview, confirmed sanitized send and stale-analysis rejection.
+- No HTTP requests from the tested workspace/redactor pages. Tests block external HTTP; provider fixtures are synthetic routed pages.
+- npm audit reported zero known vulnerabilities at validation time. This is not a security certification.
+
+**Semantic inference is mocked in UI tests.** Actual BERT and OCR are exercised separately. Chrome's built-in language model was not available in the isolated test profile. Subsequent native Chrome control allowed a signed-in synthetic smoke test: real local analysis and reviewed masked submission completed on Claude, Gemini and ChatGPT. Claude and Gemini restored replies; ChatGPT restoration exposed changed markup. Adapter fixes passed a DOM regression and an October 27 installed-extension retest with fresh submissions on ChatGPT and Gemini. ChatGPT and Gemini restoration survived page refreshes. See [live checkpoint](LIVE_TEST_CHECKPOINT.md) for exact scope and limitations.
+
+Reproduce with README commands. `artifacts/browser-evidence.json` is written only after the browser suite completes successfully. Screenshots are synthetic fixtures. The initial branch build also passed GitHub Actions on Ubuntu (run 40223963173). Follow the PR checks for the latest revision.
+
+No claims are made for multilingual accuracy, scanned-document completeness, handwriting, native upload interception, real provider streaming or security against every hostile page. Remaining gates are listed in CAPABILITIES.md.
+
+## Local checkout follow-up
+
+Development resumed in the verified local checkout on the existing `codex/incognix-release` branch. Model hashes passed in the copied checkout. Added full PDF extraction deadlines, AbortSignal cleanup and independent document-loading state so typing does not discard a pending attachment. Six real browser rejection cases cover malformed UTF-8, NUL text, malformed PDF, unsupported DOCX, blank PDF and page-limit violations. The expanded browser suite passed, including typing during delayed file loading. Chrome semantic inference remains mocked in these UI checks.
+
+## 0.8.1 composer documents and optional sites
+
+Added browser-fixture tests for attaching a synthetic text PDF inside each integrated composer, mandatory preview, masked email in outgoing document text, original filename exclusion, successful send, attachment cleanup and malformed PDF rejection. All three passed. Idle composers measured below 190 px, and fixed-bottom inputs remained inside a 420 × 500 viewport. A multiline contenteditable failure found by these tests was fixed using text nodes and line breaks.
+
+Generic-adapter tests use a separate HTTPS fixture and verify unique labelled-input selection, refusal of ambiguous chat inputs and exclusion of unrelated fields. Background tests verify optional permission requirements, revocation, origin binding and frame-height forwarding. These do not establish compatibility with all live AI sites. UI suites mock semantic inference; real bundled NER/OCR checks still run separately.
+
+## 0.8.2 follow-up — October 28
+
+51 JavaScript suites passed, including short labelled account numbers, optional all-HTTPS permission rejection/registration, and formless or explicitly selected generic editors. Source syntax checks passed. Installed-extension fixtures for ChatGPT, Claude and Gemini passed real PNG OCR in the composer, extracted-email masking, private host-page isolation, PDF submission, whole rounded shell replacement, compact idle sizing and a 420 × 500 viewport. Real bundled NER and OCR ran; contextual semantic inference was mocked. Live Chrome showed 0.8.2 enabled. A fresh Claude test verified the full composer shell visually, real local masked preview, confirmed submission, and local prompt/reply restoration. Gemini produced a real masked preview, but native Chrome control failed during the send check (ScreenCaptureKit error -3811); delivery and resulting layout were not verified. No universal platform-compatibility claim is made.
+
+## 0.8.3 attachment follow-up
+
+Added actual scanned-PDF OCR on an image-only synthetic PDF, cancelled-document rejection, clipboard-image ingestion in each of the three provider fixtures, and replacement-file drop checks that invalidate the prior preview. OCR worker cancellation has a separate regression for cancellation during startup and late worker cleanup. Generic adapter tests cover plain-text send controls, hidden duplicates and ambiguous visible controls. Semantic inference remains mocked in automated UI tests. No new signed-in acceptance is claimed for this revision.

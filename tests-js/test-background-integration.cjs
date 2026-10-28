@@ -32,7 +32,13 @@ async function call(m,from){return new Promise(resolve=>handler(m,from,resolve))
  const start=prompt.indexOf('testing@example.com');
  const a=await call({type:'ANALYZE',bridge,text:prompt,entities:[{type:'EMAIL',text:'testing@example.com',start,end:start+19,necessary:false}]},trusted);
  assert.equal(a.ok,true);
- const sentReply=await call({type:'PREPARE_AND_SEND',bridge,draftId:a.draft_id,decisions:{}},trusted);
+ assert.equal((await call({type:'PREPARE_AND_SEND',bridge,draftId:a.draft_id},trusted)).ok,false,'preview required');
+ assert.equal((await call({type:'ANALYZE',bridge,text:prompt,entities:[]},{...trusted,url:privateUrl.replace('fakeid','other-extension')})).ok,false,'reject other extension origin');
+ const preview=await call({type:'PREVIEW',bridge,draftId:a.draft_id,decisions:{}},trusted);
+ assert.equal(preview.ok,true);
+ const attempts=await Promise.all([1,2].map(()=>call({type:'PREPARE_AND_SEND',bridge,draftId:a.draft_id,previewId:preview.previewId},trusted)));
+ assert.equal(attempts.filter(x=>x.ok).length,1,'single-use send under concurrent approval');
+ const sentReply=attempts.find(x=>x.ok);
  assert.equal(sentReply.ok,true);
  assert(!sent[0].text.includes('testing@example.com'),'no original values sent to page adapter');
  assert.match(sent[0].text,/\[PRIVATE_EMAIL_1_[0-9A-F]{6}\]/);
@@ -43,6 +49,10 @@ async function call(m,from){return new Promise(resolve=>handler(m,from,resolve))
  assert.equal(blocked.ok,false,'host page must not invoke private analysis');
  const blocked2=await call({type:'ANALYZE',bridge,text:prompt,entities:[]},{tab:{id:44},url:privateUrl});
  assert.equal(blocked2.ok,false,'another tab must not use channel');
+ await call({type:'SAVE_EDITOR',bridge,text:'private unsent draft'},trusted);
+ assert.equal((await call({type:'LOAD_EDITOR',bridge},trusted)).text,'private unsent draft');
+ await call({type:'SAVE_EDITOR',bridge,text:''},trusted);
+ assert.equal((await call({type:'LOAD_EDITOR',bridge},trusted)).text,'');
  await call({type:'CLEAR_SESSION',bridge},trusted);
  const after=await call({type:'RESTORE_MESSAGE',bridge,messageId:'response_1'},trusted);
  assert.equal(after.unresolved,true,'cleared secret mapping cannot restore tokens');

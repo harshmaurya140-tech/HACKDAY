@@ -1,143 +1,45 @@
-# Incognix v0.7.1
+# Incognix 0.8.3 — development prerelease
 
-**Private prompting for ChatGPT, Claude, and Gemini — directly in your browser.**
+Incognix reviews sensitive text locally before you share it with an AI chatbot. It combines bundled BERT named-entity recognition, deterministic credential checks, and Chrome's on-device language model for contextual detection and necessity decisions. Users need no Python service, account, API key or separately installed model server.
 
-Incognix is an experimental Chrome extension designed to reduce unnecessary disclosure of personal information in AI conversations. It offers a private, extension-controlled composer, analyzes text with Chrome's on-device AI where supported, replaces selected sensitive values with consistent placeholders, and locally restores known placeholders in AI responses.
+**This is a tested development build, not a production-ready privacy guarantee.** Chrome's local language model must be supported and available on the device; Chrome may download it on first use. If contextual analysis is unavailable, text submission stays blocked. Bundled NER is real, but cannot replace the semantic model's decision stage.
 
-> **Release status:** **Development beta.** Incognix v0.7.1 is **not security-audited or published on the Chrome Web Store**. Use **fictional data only** for testing. Sensitive-data detection and live website compatibility are not guaranteed.
+## Install
 
-## Features
+Use the packaged extension ZIP, extract it, then choose the extracted folder containing `manifest.json` in Chrome → Extensions → Developer mode → Load unpacked. Pin Incognix and click its icon for site activation and document tools. See [installation](INSTALLATION.md). GitHub's source ZIP is not the packaged extension; developers must build it first.
 
-| Feature | Behavior in v0.7.1 |
-| --- | --- |
-| **Protection ON/OFF switch** | Protection starts **ON**. Switching **OFF** hides the entire private composer and reveals the original AI website textbox. A small **Protection off** switch remains above the native textbox so protection can be re-enabled. |
-| **Private draft isolation** | Turning protection off never copies an unsent private draft into the website's textbox. Switching back on does not silently overwrite a nonempty website draft. |
-| **Adaptive composer styling** | Reads the current website's computed colors, typography, border and button styling instead of using fixed visual themes for ChatGPT, Claude and Gemini. |
-| **Minimal in-chat UI** | No product-name heading or diamond icon inside the composer. |
-| **Browser-local sensitive-data detection** | Uses Chrome's on-device LanguageModel / Prompt API where available, plus generic structured-format checks. |
-| **Contextual necessity assessment** | A separate local assessment checks whether an exact sensitive value is materially needed for the task. |
-| **Selective disclosure** | Unnecessary detected values are masked. Eligible values considered necessary require explicit user approval before disclosure. High-risk identifiers have stricter safeguards. |
-| **Conversation-scoped placeholders** | Stable pseudonymous tokens are mapped locally to original values for supported conversations. |
-| **Private answer restoration** | Recognized placeholders in assistant replies are restored within extension-origin frames rather than writing original private values back into the AI website's DOM. |
-| **Three website adapters** | Contains integration code for ChatGPT, Claude and Google Gemini, subject to changing website structures. |
+## What works
 
-## How it works
+- Compact graphite/blue composer with ON/OFF control for ChatGPT, Claude and Gemini; exact outgoing preview and explicit send confirmation.
+- Other HTTPS AI sites: enable access per site or opt into automatic detection across HTTPS sites from the toolbar popup. Choose the AI input manually when detection is ambiguous. A generic adapter supports unambiguous, labelled textarea/contenteditable chat inputs; unknown or ambiguous layouts are left unchanged. This is compatibility support, not a guarantee for every platform. The manual workspace remains available.
+- Attach, paste or drop PNG/JPEG images directly: bundled English OCR extracts text inside the private composer, with an editable recognition preview before privacy analysis. Only reviewed text is shared; original pixels stay local. Image limits: 8 MB and 16 megapixels.
+- Attach text PDFs directly with the composer’s + button. Extracted content enters the same local analysis, disclosure and preview flow as typed text; the original file is never uploaded. Combined prompt/document limit: 12,000 characters, 8 MB and 25 PDF pages. Scanned pages use local English OCR in the composer, limited to 10 PDF pages and 20 million rendered pixels total. Encrypted PDFs remain blocked. The separate workspace remains text-PDF only.
+- Bundled quantized BERT NER and English Tesseract OCR; no runtime CDN dependency. Chrome's local model adds context and necessity assessment. Credentials remain masked regardless of model suggestions.
+- Session-scoped mappings, stale-draft cancellation, serialized send confirmation and session-only draft recovery on integrated sites.
+- Local confidential terms, international credential checks, manual restoration, and explicit disclosure choices for eligible facts.
+- Text-based PDF/TXT/MD/CSV extraction with reviewed TXT or newly constructed text-PDF export.
+- PDF/PNG/JPEG visual redaction: mark regions, optionally suggest regions with local OCR and AI, inspect every page, and export a newly rasterized PDF. Selected pixels are replaced and original PDF objects are not copied.
 
-```text
-User types in Incognix's private composer
-                    |
-                    v
-      Local sensitive-data detection
-                    |
-                    v
-         Local necessity assessment
-                    |
-                    v
-  Automatic masking or user disclosure review
-                    |
-                    v
-          Sanitized/approved prompt
-                    |
-                    v
-           ChatGPT / Claude / Gemini
-                    |
-                    v
-          External AI generates reply
-                    |
-                    v
-   Local restoration of known placeholders
-       inside an extension-owned frame
-```
+Read [capabilities and limits](docs/CAPABILITIES.md), [privacy](PRIVACY.md), [threat model](docs/THREAT_MODEL.md), and [test evidence](docs/TEST_EVIDENCE.md) before using sensitive material.
 
-The **external AI answers the user's request**; the local model is used for privacy classification. Placeholder replacement is **pseudonymization**, not encryption or a guarantee of anonymity.
+## Developer build
 
-### Protection toggle
+Node 22+ and Python 3 are build tools only. Model preparation downloads pinned public assets; ordinary privacy processing stays local.
 
-- **ON (default):** The protected composer replaces the site's native input. Incognix performs available local analysis and sanitization before submitting a message.
-- **OFF:** The private composer disappears entirely. The website's ordinary input reappears; anything typed or sent there is **not protected by Incognix**.
-- **Back ON:** Click the compact **Protection off** switch above the normal textbox. If the native textbox contains an unsent draft, clear or send it first; Incognix won't silently erase it.
-- **New chat / refresh:** Protection returns to ON by default. A draft or temporary placeholder mapping may be lost when the extension reloads.
-
-## Requirements and supported websites
-
-- **Google Chrome 138 or newer**, with the necessary on-device AI API and compatible hardware/configuration.
-- Supported site adapters: [ChatGPT](https://chatgpt.com), [Claude](https://claude.ai), and [Gemini](https://gemini.google.com).
-- **No Python, pip, Ollama, local server, companion application or cloud API key** is required for an end user.
-- Chrome may need to initialize or download its built-in AI model. If required local analysis is unavailable, protected submission is designed to block rather than send an unprocessed prompt.
-
-**Compatibility warning:** Automated tests cover the adapters, but the current build has **not** been comprehensively verified in authenticated live sessions on all three sites.
-
-## Installation
-
-1. Clone or download and extract this repository to a permanent folder.
-2. Open **`chrome://extensions`** in Google Chrome.
-3. Turn on **Developer mode**.
-4. Click **Load unpacked**.
-5. Select the repository's **`extension/`** directory (the folder containing `manifest.json`).
-6. Confirm the extension appears as **Incognix** and is enabled.
-7. Open or refresh ChatGPT, Claude, or Gemini.
-8. Check that **Protection on** is displayed before trying a **fictional** test prompt.
-
-After changing extension files, click **Reload** on its card in `chrome://extensions` and refresh the AI website tabs. Avoid loading multiple copies from different folders.
-
-For more installation details, see [INSTALLATION.md](INSTALLATION.md).
-
-## Project layout
-
-```text
-extension/
-  manifest.json              # Chrome Manifest V3 configuration
-  background.js              # Service worker / extension message bridge
-  content/                   # Site adapters, native-input integration and navigation
-  core/                      # Privacy rules, placeholder and response utilities
-  private/                   # Private composer, local AI and restored-response frames
-scripts/                     # Experimental GLiNER2 build and verification utilities
-tests-js/                    # JavaScript regression tests
-tests-ui/                    # Synthetic Chromium UI/layout tests
-INSTALLATION.md              # User installation and toggle instructions
-RELEASE_NOTES.md             # v0.7.1 release behavior and limitations
-package.json                 # Developer commands
-```
-
-## Developer testing
-
-End users do **not** need Node.js. Developers can execute the regression tests from the repository root:
-
-```bash
-npm test
-```
-
-The v0.7.1 release recorded **44 passing JavaScript regression suites**, plus synthetic Chromium checks of protection OFF → native typing → protection ON and the small re-enable switch.
-
-These checks do **not** establish real-world detection accuracy or prove that confidential information cannot reach the provider on a live logged-in website.
-
-### GLiNER2 asset check
-
-```bash
+```sh
+npm ci
+npm run prepare:model
+npm run build
 npm run verify:model
+npm run check
+npm test
+npx playwright install chromium
+npm run test:browser
+npm run package
 ```
 
-This check is **expected to fail for the distributed v0.7.1 build**: the required model assets are not included.
+Load `extension/` after building. Packages and SHA-256 checksums are written to `dist/`. The extension ZIP contains models and runtime libraries. Model hashes and revisions are in `docs/NER_ASSETS.json` and `docs/OCR_ASSETS.json`; third-party licenses are in `extension/licenses/`.
 
-## GLiNER2 integration status
+## Release status
 
-GLiNER2 ONNX-related source modules and build tooling are present, but v0.7.1 **does not bundle operational GLiNER2 model weights, tokenizer assets or the complete inference runtime**. Actual browser GLiNER2 inference has not been verified against real inputs.
-
-The current extension instead relies on **Chrome's on-device AI**, when available, together with structured-format checks. **Do not describe GLiNER2 as active in this release.**
-
-## Security boundaries and known limitations
-
-- Incognix attempts to **reduce unnecessary exposure**; it cannot guarantee anonymity, perfect PII recognition or zero leakage.
-- Missed sensitive entities, surrounding context, or incorrect necessity classifications could still disclose information.
-- **Protection OFF** exposes the ordinary website input to that AI service with no Incognix sanitization.
-- Only supported **text-chat workflows** are in scope. Do not assume files, images, voice, external tools or other submission paths are protected.
-- Changes to ChatGPT, Claude, or Gemini's interface may break input selection, sanitized submission, or response restoration.
-- Not every complex response format or special AI artifact can be restored perfectly.
-- Full authenticated multi-platform end-to-end checks, a network-leakage audit, and model accuracy/performance benchmarking are still outstanding.
-- Incognix v0.7.1 is an unpublished development build, not a certified or security-reviewed product.
-
-**For now, use synthetic information instead of genuine personal data, financial details or credentials.**
-
-## License
-
-See [LICENSE](LICENSE).
+Based on main `afdc1e0e8f82c2b63cb4ccffe057cdb863be03ad` (v0.7.1). Current automated tests use synthetic data and isolated browser fixtures. A signed-in synthetic smoke test completed real local analysis and masked sends on all three providers; all three restored replies; ChatGPT and Gemini display fixes passed live retesting. Broad provider acceptance and semantic-model quality evaluation remain outstanding; see [live evidence](docs/LIVE_TEST_CHECKPOINT.md). DOCX, audio transcription, managed enterprise policy and universal automatic file-upload protection are not implemented. See [release notes](RELEASE_NOTES.md).

@@ -12,7 +12,7 @@ const page=fs.readFileSync(path.join(base,'content/content.js'),'utf8');
 const bg=fs.readFileSync(path.join(base,'background.js'),'utf8');
 // Toggle is visibly part of the private composer, rather than the Chrome toolbar.
 assert.match(html, /id="protection-toggle"[^>]*role="switch"[^>]*aria-checked="true"/);
-assert.match(html, /id="protection-state">Protection on</);
+assert.match(html, /id="protection-state">Incognix · on</);
 assert.doesNotMatch(html, /class="shield"|<b>Privacy Shield<\/b>|◈ Restored privately/);
 assert.match(css, /#composer\[data-protection="off"\] textarea,/);
 assert.match(css, /--ps-host-bg/);

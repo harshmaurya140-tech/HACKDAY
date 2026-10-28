@@ -161,8 +161,19 @@
     try{await chrome.runtime.sendMessage({type:'REGISTER_TAB',bridge});}
     catch{if(!runtimeAvailable())stopAfterInvalidation();}
   }
-  function findNative(){return adapter.findComposer?.()||adapter.query(adapter.composer);}
+  function findNative(){return adapter.findComposer?adapter.findComposer?.():adapter.query(adapter.composer);}
   function containerFor(native){
+    // Replace the whole bounded composer shell, including its attachment row.
+    // Avoid turning a page-sized form or transcript into the hidden container.
+    if(typeof getComputedStyle==='function'){
+      const base=native.getBoundingClientRect();
+      for(let n=native.parentElement,depth=0;n&&depth<6;n=n.parentElement,depth++){
+        const r=n.getBoundingClientRect(),css=getComputedStyle(n);
+        if(r.width>Math.max(1100,base.width*1.8)||r.height>360)break;
+        if(parseFloat(css.borderTopLeftRadius)>=12&&r.width>=base.width&&r.height>=base.height+20)return n;
+      }
+    }
+    if(adapter.id==='generic')return native.closest('form')||native.closest('[data-testid*="composer"], [class*="composer"], [class*="chat-input"]')||native.parentElement;
     if(adapter.id==='chatgpt')return native.closest('form') || native.parentElement?.parentElement;
     if(adapter.id==='gemini')return native.closest('form')||native.closest('input-area-v2')||native.closest('[class*="input-area-container"]')||native.closest('rich-textarea')?.parentElement||native.parentElement?.parentElement;
     return native.closest('form')||native.closest('[data-testid="chat-input"]')||native.parentElement?.parentElement;
@@ -194,6 +205,10 @@
     nativeDraft.reset();
     nativeEditor=null;
     const original=containerFor(native);if(!original||!original.parentElement)return;
+    // A generic editor may sit directly under body or inside a transcript form.
+    // Never hide the entire page/transcript to replace a single input.
+    if(original===document.body||original===document.documentElement)return;
+    if(adapter.id==='generic' && original.getBoundingClientRect?.().height>600)return;
     // The native site form remains in the DOM for sanitized submission only.
     privateComposer=mkFrame('composer','','assistant',sampleComposerAppearance(native,original));
     if(!privateComposer)return;
@@ -235,7 +250,13 @@
       const sel=window.getSelection();
       if(sel){const range=document.createRange();range.selectNodeContents(el);sel.removeAllRanges();sel.addRange(range);}
       try{document.execCommand('insertText',false,value);}catch{}
-      if((el.innerText||'').trim()!==value.trim())el.textContent=value;
+      if((el.innerText||'').trim()!==value.trim()){
+        // Preserve extracted PDF paragraph boundaries even on editors whose
+        // CSS collapses whitespace. Only sanitized strings become text nodes.
+        const nodes=[];
+        value.split('\n').forEach((line,index)=>{if(index)nodes.push(document.createElement('br'));nodes.push(document.createTextNode(line));});
+        el.replaceChildren(...nodes);
+      }
       el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:value}));
     }else{
       const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')?.set || Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;
@@ -276,6 +297,14 @@
         return true;
       };
       const findEnabledSend=(scope)=>{
+        if(adapter.id==='generic'&&adapter.findSend)return adapter.findSend(scope);
+        if(adapter.id==='generic'&&scope?.querySelectorAll){
+          const buttons=new Set();
+          for(const selector of adapter.send)for(const button of scope.querySelectorAll(selector)){
+            if(isSendButton(button))buttons.add(button);
+          }
+          return buttons.size===1?[...buttons][0]:null;
+        }
         if(scope?.querySelectorAll){
           for(const selector of adapter.send){
             try{
@@ -297,13 +326,14 @@
         // Select only enabled, known Send controls; a stale disabled control
         // must not hide an enabled replacement after a framework rerender.
         button=findEnabledSend(hiddenComposer) ||
+               (adapter.id!=='generic' && (
                findEnabledSend(hiddenComposer?.parentElement) ||
-               findEnabledSend(typeof document!=="undefined"?document:null);
+               findEnabledSend(typeof document!=="undefined"?document:null)));
         if(button)break;
       }
       if(button){
         navigation.markSendAttempt();button.click();
-      }else if(form && typeof form.requestSubmit==='function' &&
+      }else if(adapter.id!=='generic' && form && typeof form.requestSubmit==='function' &&
                !form.querySelector('button[type="submit"][disabled],button[type="submit"][aria-disabled="true"]')){
         // A uniquely bound native form is a safer fallback than pressing keys
         // on a web-controlled page. No fallback submits an unsanitized prompt.
@@ -349,6 +379,20 @@
     nativeDraft.reset();
     return {ok:true};
   }
+  // Best-effort UI gating, not a network firewall. Originals are accepted only
+  // in the extension workspace. A provider can still transmit data it already owns.
+  function blockMedia(event){
+    if(!protectionEnabled)return;
+    const fileEvent=(event.type==='drop'&&event.dataTransfer?.files?.length)||
+      (event.type==='paste'&&[...(event.clipboardData?.items||[])].some(x=>x.kind==='file'));
+    const target=event.target?.closest?.('input[type="file"],button,[role="button"],label');
+    const label=target?[target.getAttribute('aria-label'),target.getAttribute('title'),target.getAttribute('data-testid'),target.textContent].filter(Boolean).join(' '):'';
+    const mediaClick=event.type==='click'&&(target?.matches('input[type="file"]')||/attach|upload|microphone|dictat|voice|screen shar|camera/i.test(label));
+    if(fileEvent||mediaClick){event.preventDefault();event.stopImmediatePropagation();
+      alert('Protected mode blocks native files and voice. Open Incognix from the extension toolbar to review a supported document locally.');
+    }
+  }
+  if(typeof document!=='undefined')for(const type of ['click','drop','paste'])document.addEventListener?.(type,blockMedia,true);
   function observerScan(){
     if(!checkRuntime())return;
     installComposer();
@@ -403,9 +447,10 @@
         frame.style.maxWidth=role==='assistant'?'min(100%, 760px)':'min(100%, 650px)';
         frame.style.margin=role==='assistant'?'8px auto 22px':'8px 0 20px auto';
       }else if(adapter.id==='gemini'){
-        frame.style.maxWidth='min(100%, 840px)';
-        frame.style.margin='8px auto 22px';
+        frame.style.maxWidth=role==='user'?'min(78%, 650px)':'min(100%, 760px)';
+        frame.style.margin=role==='user'?'12px 0 24px auto':'12px auto 24px';
       }
+      if(adapter.id!=='chatgpt'&&adapter.id!=='gemini'){frame.style.maxWidth=role==='user'?'min(78%, 650px)':'min(100%, 760px)';frame.style.margin=role==='user'?'12px 0 24px auto':'12px auto 24px';}
       const original=adapter.hiddenOriginal?.(node)||node;
       originals.set(id,original);
       frames.set(id,frame);
@@ -428,8 +473,25 @@
     clearTimeout(scanTimer);
     scanTimer=setTimeout(observerScan,1200);
   }
+  let stopPicker=null;
+  function pickComposer(){
+    stopPicker?.();
+    const tip=document.createElement('div');tip.textContent='Incognix: click the AI message input to protect it. Press Escape to cancel.';
+    tip.style.cssText='position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#253d68;color:white;padding:12px 20px;border-radius:14px;z-index:2147483647;font:14px system-ui;box-shadow:0 4px 24px #0005';document.documentElement.append(tip);
+    const stop=()=>{tip.remove();document.removeEventListener('click',choose,true);document.removeEventListener('keydown',key,true);stopPicker=null;};
+    const key=e=>{if(e.key==='Escape')stop();};
+    const choose=e=>{
+      const target=e.composedPath().find(n=>n?.matches?.('textarea,[contenteditable="true"]'));
+      if(!target||target.closest?.('form')?.querySelector('input[type="password"]'))return;
+      e.preventDefault();e.stopImmediatePropagation();
+      adapter.selectedComposer=target;stop();installComposer();
+    };
+    stopPicker=stop;document.addEventListener('click',choose,true);document.addEventListener('keydown',key,true);
+  }
   chrome.runtime.onMessage.addListener((msg,sender,respond)=>{
     if(!checkRuntime())return;
+    if(msg.type==='PICK_COMPOSER'){if(!privateComposer?.isConnected)pickComposer();respond({ok:true});return;}
+    if(msg.type==='INCOGNIX_STATUS'){respond({ok:true,installed:Boolean(privateComposer?.isConnected),enabled:protectionEnabled&&Boolean(privateComposer?.isConnected),site:adapter.id});return;}
     if(msg.bridge!==bridge){respond({ok:false,error:'Wrong conversation'});return;}
     if(msg.type==='SET_PROTECTION_ENABLED'){
       if(typeof msg.enabled!=='boolean'){respond({ok:false,error:'Invalid toggle state'});return;}
@@ -483,12 +545,9 @@
       // fixed-height iframe clips writing panes and produces nested scrolling;
       // measure trusted extension content and size the frame to fit it.
       const maxResponseHeight=24000;
-      // Gemini centers its empty-chat input vertically. A global 730px cap
-      // still leaves Approve & send below the bottom of the browser viewport.
-      // Bound composer height by *actual space below its current screen position*.
-      const frameRect=privateComposer?.getBoundingClientRect();
-      const composerRoom=Math.max(165,Math.floor(window.innerHeight-(frameRect?.top??0)-14));
-      const composerMax=Math.min(730,Math.max(165,window.innerHeight-45),composerRoom);
+      // Review expands within the viewport and shifts upward when a host
+      // anchors its composer near the bottom of the screen.
+      const composerMax=Math.min(520,Math.max(80,window.innerHeight-45));
       const height=Math.max(50,Math.min(msg.messageId?maxResponseHeight:composerMax,Number(msg.height)||120));
       if(msg.messageId){
         const f=frames.get(msg.messageId);
@@ -502,6 +561,9 @@
         }
       }else if(privateComposer){
         privateComposer.style.height=height+'px';
+        privateComposer.style.transform='';
+        const box=privateComposer.getBoundingClientRect();
+        if(box.bottom>window.innerHeight-12&&box.top>0)privateComposer.style.transform='translateY(-'+Math.min(box.top,box.bottom-window.innerHeight+12)+'px)';
       }
       respond(msg.messageId?{ok:true}:{ok:true,appliedHeight:height});return;
     }
@@ -528,7 +590,7 @@
     if(!protectionEnabled){positionReenableFrame();return;}
     if(!privateComposer?.isConnected)return;
     const rect=privateComposer.getBoundingClientRect();
-    const room=Math.max(165,Math.floor(window.innerHeight-rect.top-14));
+    const room=Math.max(80,Math.floor(window.innerHeight-rect.top-14));
     const cap=Math.min(730,room);
     const current=Number.parseFloat(privateComposer.style.height)||140;
     if(current>cap)privateComposer.style.height=cap+'px';
