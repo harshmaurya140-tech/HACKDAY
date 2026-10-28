@@ -7,7 +7,7 @@ let active;
   if(u.protocol!=='https:'){status.textContent='Open an HTTPS AI chat website first.';return;}
   enable.disabled=false;
   try{const result=await chrome.tabs.sendMessage(active.id,{type:'INCOGNIX_STATUS'});
-    if(result?.installed){status.textContent='Protected composer active. Attach PDFs using its + button.';enable.textContent='Check integration';}
+    if(result?.installed){status.textContent='Protected composer active. Attach images or PDFs using its + button.';enable.textContent='Check integration';}
   }catch{status.textContent='Enable the private composer for this site.';}
 })().catch(e=>status.textContent=e.message);
 enable.addEventListener('click',async()=>{
@@ -20,7 +20,23 @@ enable.addEventListener('click',async()=>{
     const result=await chrome.runtime.sendMessage({type:'ENABLE_SITE',tabId:active.id});
     if(!result?.ok)throw Error(result?.error||'Could not enable protection');
     const state=await chrome.tabs.sendMessage(active.id,{type:'INCOGNIX_STATUS'});
-    status.textContent=state?.installed?'Protected composer ready. Use its + button to attach a PDF.':'No unambiguous supported chat input found. Open the chat input, then check again. This layout is not protected.';
+    status.textContent=state?.installed?'Protected composer ready. Use its + button to attach an image or PDF.':'No unambiguous supported chat input found. Open the chat input, then check again. This layout is not protected.';
   }catch(e){status.textContent=e.message;}
   finally{enable.disabled=false;}
+});
+
+document.getElementById('pick').addEventListener('click',async()=>{
+ try{
+  if(!active||new URL(active.url).protocol!=='https:')throw Error('Open an HTTPS chatbot first.');
+  if(!await chrome.permissions.request({origins:[new URL(active.url).origin+'/*']}))throw Error('Permission not granted');
+  const r=await chrome.runtime.sendMessage({type:'ENABLE_SITE',tabId:active.id});if(!r?.ok)throw Error(r?.error);
+  await chrome.tabs.sendMessage(active.id,{type:'PICK_COMPOSER'});window.close();
+ }catch(e){status.textContent=e.message;}
+});
+document.getElementById('all').addEventListener('click',async()=>{
+ try{
+  if(!await chrome.permissions.request({origins:['https://*/*']}))throw Error('All-sites permission not granted.');
+  const r=await chrome.runtime.sendMessage({type:'ENABLE_ALL'});if(!r?.ok)throw Error(r?.error);
+  status.textContent='Automatic detection enabled on HTTPS sites. Refresh existing tabs. Use Choose input when detection cannot identify a chat box.';
+ }catch(e){status.textContent=e.message;}
 });

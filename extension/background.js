@@ -61,6 +61,14 @@ async function handle(msg,sender){
     await chrome.storage.session.set(updates);
     return {ok:true};
   }
+  if(msg.type==='ENABLE_ALL'){
+    if(sender.tab||sender.url!==chrome.runtime.getURL('private/popup.html'))throw Error('Only the toolbar can enable sites');
+    if(!await chrome.permissions.contains({origins:['https://*/*']}))throw Error('All-sites permission was not granted');
+    const id='incognix-all-sites';
+    const old=await chrome.scripting.getRegisteredContentScripts({ids:[id]});
+    if(!old.length)await chrome.scripting.registerContentScripts([{id,matches:['https://*/*'],excludeMatches:[...allowedHosts].map(h=>'https://'+h+'/*'),js:['content/adapters.js','content/session-navigation.js','content/native-draft.js','content/content.js'],runAt:'document_idle',persistAcrossSessions:true}]);
+    return {ok:true};
+  }
   if(msg.type==='ENABLE_SITE'){
     if(sender.tab||sender.url!==chrome.runtime.getURL('private/popup.html'))throw Error('Only the toolbar can enable a site');
     const tab=await chrome.tabs.get(msg.tabId);

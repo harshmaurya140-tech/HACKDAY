@@ -102,10 +102,10 @@
     }
     // Generic context-aware account-number format detection, not a specific
     // prompt or account value. Plain long numbers are NOT all bank accounts.
-    const accountRx=/\b(?:bank\s+)?(?:account|a\/c)\s*(?:number|no\.?|#)?\s*(?:is|[:=#-])?\s*(\d[\d -]{7,24}\d)\b/gi;
+    const accountRx=/\b(?:bank\s+)?(?:account|a\/c)\s*(?:number|no\.?|#)?\s*(?:is|[:=#-])?\s*(\d[\d -]{2,24}\d)\b/gi;
     for(const match of text.matchAll(accountRx)){
       const number=match[1],digits=number.replace(/[^0-9]/g,'');
-      if(digits.length<9||digits.length>18)continue;
+      if(digits.length<4||digits.length>18)continue;
       const start=match.index+match[0].lastIndexOf(number);
       findings.push({type:'ACCOUNT',text:number,start,end:start+number.length,necessary:false,reason:'Account identifier; hidden by default.'});
     }

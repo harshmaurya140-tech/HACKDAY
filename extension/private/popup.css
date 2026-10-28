@@ -1,1 +1,3 @@
 :root{color-scheme:light dark;font:13px/1.5 system-ui;color:light-dark(#202124,#ececec);background:light-dark(#fff,#242526)}body{width:310px;margin:0}main{padding:18px}header{display:flex;align-items:center;justify-content:space-between}strong{font-size:24px}header span,.hint{font-size:11px;opacity:.7}#site{overflow-wrap:anywhere;font-weight:600}button{width:100%;border:0;border-radius:12px;padding:11px;background:#268568;color:#fff;font:inherit;font-weight:600;cursor:pointer}button:disabled{opacity:.5}a{display:block;margin-top:10px;color:inherit}#status{min-height:38px}
+
+button.secondary{margin-top:8px;background:transparent;border:1px solid #7c849955;color:inherit;font-size:12px}button{background:#5b7ee5}

@@ -9,7 +9,7 @@
 <body>
   <main id="composer" hidden>
     <div class="top">
-      <button type="button" id="protection-toggle" class="protection-switch" role="switch" aria-checked="true" aria-label="Turn privacy protection off"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span id="protection-state">Protection on</span></button>
+      <button type="button" id="protection-toggle" class="protection-switch" role="switch" aria-checked="true" aria-label="Turn privacy protection off"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span id="protection-state">Incognix · on</span></button>
       <span id="status" class="status" role="status" aria-live="polite">Checking local protection…</span>
     </div>
     <textarea id="draft" rows="1" placeholder="Message privately…"></textarea>
@@ -21,13 +21,13 @@
     </section>
     <section id="preview" hidden><label for="outgoing">Exact text the chatbot will receive</label><textarea id="outgoing" readonly rows="5"></textarea><div class="toolbar"><button id="preview-cancel" class="secondary">Back to draft</button><button id="confirm-send">Send reviewed text</button></div></section>
     <div class="toolbar" id="native-recovery" hidden><button type="button" id="discard-native" class="secondary">Discard website draft</button></div>
-    <div id="attachment-info" role="status" hidden></div>
-    <input id="attachment-file" type="file" accept=".pdf,.txt,.md,.csv" hidden>
+    <div id="attachment-info" role="status" hidden></div><details id="attachment-review" hidden><summary>Review extracted text</summary><textarea id="extracted-text" aria-label="Extracted attachment text" rows="4"></textarea><small>Correct OCR mistakes here before privacy analysis. Only reviewed text is shared.</small></details>
+    <input id="attachment-file" type="file" accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg" hidden>
     <div class="toolbar bottom">
-      <button id="attach" type="button" class="secondary" aria-label="Attach a PDF or text document" title="Attach PDF or text">＋</button>
+      <button id="attach" type="button" class="secondary" aria-label="Attach an image, PDF or text document" title="Attach image, PDF or text">＋</button>
       <button id="remove-attachment" type="button" class="secondary" hidden>Remove document</button>
       <span class="notice" id="notice">Sensitive details stay local until you approve a disclosure.</span>
-      <button id="send">Review ➤</button>
+      <button id="send">Review ↑</button>
     </div>
     <details class="tools"><summary>Privacy tools</summary><div class="foot"><button id="rescan" class="link">Refresh restored messages</button><button id="clear" class="link">Clear private mappings</button></div></details>
   </main>

@@ -9,7 +9,7 @@ assert.match(css,/max-height:var\(--ps-frame-available-height/,'root respects ho
 assert.match(css,/#permission:not\(\[hidden\]\)\{[\s\S]*?display:flex;[\s\S]*?min-height:0/,'permission content shrinks');
 assert.match(css,/#permission #choices\{[\s\S]*?flex:1 1 auto;[\s\S]*?overflow-y:auto/,'only the choice list scrolls');
 assert.match(css,/#permission>\.toolbar\{[\s\S]*?flex-shrink:0|#permission>\.permission-title,#permission>p,#permission>\.toolbar\{\s*flex-shrink:0/,'approval bar stays visible');
-assert.match(content,/window\.innerHeight-\(frameRect\?\.top\?\?0\)-14/,'budget is measured from iframe screen position');
+assert.match(content,/box\.bottom>window\.innerHeight-12/,'overflowing review shifts upward into the viewport');
 assert.match(content,/appliedHeight:height/,'applied budget reaches the private frame');
 assert.match(page,/--ps-frame-available-height/,'private frame applies budget');
 assert.match(content,/PRIVACY_SHIELD_FRAME_BUDGET/,'parent reacts to viewport resize');

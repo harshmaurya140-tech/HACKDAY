@@ -8,5 +8,9 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await p.evaluate(()=>document.querySelectorAll('form')[2].remove());
  await p.locator('textarea').first().evaluate(e=>e.setAttribute('placeholder','Enter password'));
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findComposer()),null,'unrelated sensitive fields must be left alone');
+ await p.evaluate(()=>{document.body.innerHTML='<div contenteditable="true" aria-label="Ask anything" style="height:50px"></div>';});
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findComposer()?.getAttribute('aria-label')),'Ask anything','formless labelled editors supported');
+ await p.evaluate(()=>{const e=document.querySelector('[contenteditable]');e.removeAttribute('aria-label');window.__privacyShieldAdapter.selectedComposer=e;});
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findComposer()?.isContentEditable),true,'explicit selection supports unlabelled editors');
  console.log('PASS optional-site adapter selects unique chat input and rejects unrelated/ambiguous forms');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

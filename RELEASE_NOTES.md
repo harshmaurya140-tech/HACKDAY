@@ -1,3 +1,11 @@
+## 0.8.2 — composer images and wider activation
+
+- PNG/JPEG attachments now use the bundled local OCR, with editable extracted text and the existing mandatory privacy preview. Original pixels remain local.
+- New neutral graphite/blue composer, full bounded shell replacement (including native toolbars), and consistent restored user bubbles/assistant typography.
+- Optional activation across HTTPS sites and a manual input picker extend the generic adapter beyond the three built-in sites. Unknown send controls and unsupported editors still fail closed.
+- Explicitly labelled 4–8 digit account identifiers are now masked by the format validator.
+- Automated installed-extension fixtures exercise real image OCR, PDF review/send, full shell replacement and small viewports. Contextual AI remains mocked in those tests; Claude passed a signed-in masked-send/restoration check; Gemini preview passed, but delivery checking was interrupted by the screen-capture connection. Broader signed-in acceptance remains outstanding.
+
 # 0.8.1 development prerelease
 
 - Attach text PDFs/TXT/MD/CSV directly inside the protected composer. Local extraction feeds the existing masking, disclosure and outgoing-preview flow. Sends reviewed text, not original PDF bytes. Combined prompt/document limit is 12,000 characters; scans and encrypted PDFs are rejected.

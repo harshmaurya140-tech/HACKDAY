@@ -184,3 +184,24 @@ textarea{font:inherit;display:block;width:100%;border:0;resize:vertical;outline:
 #composer:has(#preview:not([hidden])) .bottom{display:none}
 #composer .status:empty{display:none}
 @media(max-width:480px){#composer .status{max-width:55%;margin-left:auto;text-align:right}#composer .notice{display:none}#composer .bottom #send{margin-left:auto}}
+
+/* Unified Incognix surface: quiet graphite, a single blue accent, no nested card. */
+#composer{border-radius:22px;background:light-dark(#ffffff,#242528);color:light-dark(#20242b,#f2f3f5);border:1px solid light-dark(#dfe3ea,#3c3e44);padding:12px 16px;box-shadow:0 3px 16px #00000012;font-family:ui-sans-serif,system-ui,-apple-system,sans-serif}
+#composer .top{gap:12px;margin-bottom:3px}
+#composer .protection-switch{font-size:11px;letter-spacing:.02em;padding:2px 0;font-weight:650}
+.protection-switch .switch-track{background:#5b7ee5;width:26px;height:16px}.protection-switch .switch-thumb{width:10px;height:10px;left:13px}
+#composer .status{color:light-dark(#596476,#b0b7c5);font-size:10px;opacity:1}
+#composer .status.error{color:light-dark(#b32632,#ff9aa5)}
+#composer #draft{font-size:15px;line-height:1.5;padding:8px 0;min-height:42px;height:42px;color:inherit}
+#composer #draft::placeholder{color:light-dark(#717b8c,#939ba9)}
+#composer .bottom #send,#composer #approve,#confirm-send{background:#5b7ee5;color:#fff;border-radius:12px;padding:9px 15px;font-weight:600}
+#composer #attach{background:light-dark(#f0f2f6,#363940);color:inherit;width:32px;height:32px;font-weight:400}
+#composer .notice{font-size:10px;color:light-dark(#697386,#a7afbd)}
+#composer .tools{margin-top:5px;color:light-dark(#697386,#a7afbd)}
+#composer .tools summary{list-style:none}#composer .tools summary::before{content:'⋯ ';font-size:13px}
+#attachment-review{font-size:12px;margin:6px 0;flex-shrink:0}#extracted-text{max-height:140px!important;min-height:70px;border:1px solid var(--ps-border);padding:8px!important}
+#attachment-review small{font-size:10px;color:var(--ps-muted)}
+:root[data-privacy-site][data-privacy-role="user"] #response{background:light-dark(#e9effc,#253d68);border-radius:20px 20px 5px 20px;padding:14px 18px;color:light-dark(#182841,#f1f5ff)}
+:root[data-privacy-site][data-privacy-role="user"] .restored{color:inherit;font:14px/1.6 ui-sans-serif,system-ui,sans-serif;max-height:360px}
+:root[data-privacy-site][data-privacy-role="assistant"] #response{padding:14px 2px;background:transparent}
+:root[data-privacy-site][data-privacy-role="assistant"] .restored{font:15px/1.75 ui-sans-serif,system-ui,sans-serif;color:var(--ps-text)}

@@ -64,7 +64,7 @@
   };
   const data=defs[location.hostname]||{
     id:'generic',
-    composer:['textarea','[contenteditable="true"][role="textbox"]','[contenteditable="true"][data-placeholder]'],
+    composer:['textarea','[contenteditable="true"][role="textbox"]','[contenteditable="true"][data-placeholder]','[contenteditable="true"]'],
     send:['button[type="submit"]','button[aria-label*="Send" i]','button[data-testid*="send" i]'],
     assistant:['[data-message-author-role="assistant"]','[data-role="assistant"]','[data-message-author="assistant"]','.markdown','.prose'],
     user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]']
@@ -95,6 +95,7 @@
   // first arbitrary contenteditable node. Do not interact with stale/hidden
   // editors owned by the website's document editor.
   data.findComposer=(root=document)=>{
+    if(data.selectedComposer?.isConnected)return data.selectedComposer;
     const candidates=[];
     const seen=new Set();
     for(const selector of data.composer){
@@ -107,7 +108,7 @@
           if(node.closest?.('form')?.querySelector('input[type="password"],input[autocomplete="cc-number"]'))continue;
           if(node.disabled||node.readOnly||/search|password|email|comment|address/i.test(label))continue;
           if(!/message|prompt|ask|chat|question/i.test(label))continue;
-          if(!node.closest?.('form')&&!node.closest?.('[data-testid*="composer"], [class*="composer"], [class*="chat-input"]'))continue;
+
         }
         seen.add(node);
         if(node.closest?.('[data-private-shield="true"], [data-privacy-shield="true"]'))continue;

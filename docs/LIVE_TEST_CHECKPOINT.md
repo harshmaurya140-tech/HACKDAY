@@ -34,3 +34,10 @@ The browser connector also blocks extension settings navigation. The user reload
 ## 0.8.1 follow-up
 
 The user reloaded and enabled 0.8.1. The native Chrome toolbar reported Incognix available on the synthetic ChatGPT tab, but the tab subsequently exposed no page accessibility content and screenshot capture returned black. A toolbar-popup check was interrupted by concurrent user interaction. No successful live PDF-send or visual-layout result is claimed for this revision. Automated fixture evidence is in TEST_EVIDENCE.md; the prior 0.8.0 signed-in results do not establish acceptance of the new features.
+
+
+## October 28 — 0.8.2
+
+Chrome UI showed Incognix 0.8.2 enabled. A fresh Claude session displayed one full-width blue/graphite composer with no nested native toolbar. Synthetic Nora Vale / nora.test@example.org were masked by real local analysis, explicitly previewed, submitted, and restored inside private extension frames in both user prompt and assistant reply. Conversation: https://claude.ai/chat/7c3a5010-3060-4384-a8cd-21bd69875a0d .
+
+A fresh Gemini session produced a real masked preview for the same synthetic test. During confirmed-send control Chrome changed foreground and subsequent observation failed with ScreenCaptureKit -3811. Do not count Gemini delivery/restoration/layout as passed for this revision. ChatGPT and arbitrary additional providers have not received a fresh signed-in 0.8.2 acceptance run. Image OCR was exercised in all three isolated provider fixtures, not in this signed-in smoke test.

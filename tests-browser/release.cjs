@@ -114,9 +114,10 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
  ];
  for(const site of sites){
   const host=await context.newPage();host.setDefaultTimeout(15000);
-  await host.route(site.url,r=>r.fulfill({contentType:'text/html',body:`<!doctype html><html><body><div style="max-width:700px;margin:80px auto"><form>${site.editor}<button type="button" ${site.button}>Send</button></form></div><script>window.sent=[];document.querySelector('button').onclick=()=>{const e=document.querySelector('textarea,[contenteditable]');window.sent.push(e.value??e.innerText);if(e.tagName==='TEXTAREA')e.value='';else e.textContent='';};</script></body></html>`}));
+  await host.route(site.url,r=>r.fulfill({contentType:'text/html',body:`<!doctype html><html><body><div style="max-width:700px;margin:80px auto"><section id="native-shell" style="border-radius:24px;padding:16px;background:#eee"><form>${site.editor}<button type="button" ${site.button}>Send</button></form><div id="native-tools">Attach · Voice</div></section></div><script>window.sent=[];document.querySelector('button').onclick=()=>{const e=document.querySelector('textarea,[contenteditable]');window.sent.push(e.value??e.innerText);if(e.tagName==='TEXTAREA')e.value='';else e.textContent='';};</script></body></html>`}));
   await host.goto(site.url);
   const frame=host.frameLocator('iframe[title="Protected AI composer"]');await frame.locator('#draft').waitFor();
+  assert.equal(await host.locator('#native-shell').evaluate(e=>getComputedStyle(e).opacity),'0','whole composer shell including native toolbar must be hidden');
   const privateFrame=host.frames().find(f=>f.url().includes('mode=composer'));
   await privateFrame.evaluate(()=>{LocalPrivacyAI.analyze=async text=>{await new Promise(r=>setTimeout(r,100));return {entities:[]};};});
   await frame.locator('#draft').fill('Write to canary@example.org');
@@ -152,6 +153,16 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
   await frame.locator('#confirm-send').click();await frame.locator('#status').filter({hasText:'Sanitized prompt handed'}).waitFor().catch(async e=>{throw Error((await frame.locator('#status').textContent())+'; native='+JSON.stringify(await native.evaluate(e=>e.value??e.innerText))+'; '+e.message);});
   assert.equal((await host.evaluate(()=>window.sent)).length,2);
   assert.equal(await frame.locator('#attachment-info').isVisible(),false);
+  // Real image OCR inside the private attachment flow (semantic stage mocked).
+  const imageData=await privateFrame.evaluate(()=>{const c=document.createElement('canvas');c.width=900;c.height=150;const x=c.getContext('2d');x.fillStyle='white';x.fillRect(0,0,900,150);x.fillStyle='black';x.font='32px Arial';x.fillText('Contact: image.canary@example.org',25,80);return c.toDataURL('image/png').split(',')[1];});
+  await frame.locator('#attachment-file').setInputFiles({name:'private-image.png',mimeType:'image/png',buffer:Buffer.from(imageData,'base64')});
+  await frame.locator('#attachment-info').filter({hasText:'Image text ready'}).waitFor({timeout:90000});
+  assert((await frame.locator('#extracted-text').inputValue()).includes('image.canary@example.org'));
+  assert(!(await host.locator('body').textContent()).includes('image.canary@example.org'));
+  await frame.locator('#send').click();await frame.locator('#preview').waitFor({state:'visible'});
+  assert(!(await frame.locator('#outgoing').inputValue()).includes('image.canary@example.org'));
+  await frame.locator('#preview-cancel').click();
+  await frame.locator('#remove-attachment').click();
   // Idle editor should fit a short native-style input, rather than a dashboard.
   const bounds=await host.locator('iframe[title="Protected AI composer"]').boundingBox();
   assert(bounds.height<190,'idle protected composer must remain compact');
@@ -159,7 +170,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
   await frame.locator('#attachment-file').setInputFiles({name:'broken.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-invalid')});
   await frame.locator('#status').filter({hasText:'Document not attached'}).waitFor();
   assert.equal((await host.evaluate(()=>window.sent)).length,2,'failed PDF must not auto-send');
-  console.log('PASS in-composer PDF review/send, invalid PDF rejection and compact layout',new URL(site.url).host);
+  console.log('PASS image OCR/private preview, PDF review/send, invalid PDF rejection and full-shell compact layout',new URL(site.url).host);
   await host.setViewportSize({width:420,height:500});
   await host.evaluate(()=>{const f=document.querySelector('iframe[title="Protected AI composer"]');Object.assign(f.parentElement.style,{position:'fixed',bottom:'12px',left:'10px',width:'400px',margin:'0'});});
   await host.waitForTimeout(150);

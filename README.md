@@ -1,4 +1,4 @@
-# Incognix 0.8.1 — development prerelease
+# Incognix 0.8.2 — development prerelease
 
 Incognix reviews sensitive text locally before you share it with an AI chatbot. It combines bundled BERT named-entity recognition, deterministic credential checks, and Chrome's on-device language model for contextual detection and necessity decisions. Users need no Python service, account, API key or separately installed model server.
 
@@ -10,8 +10,9 @@ Use the packaged extension ZIP, extract it, then choose the extracted folder con
 
 ## What works
 
-- Private, host-styled composer with ON/OFF control for ChatGPT, Claude and Gemini; exact outgoing preview and explicit send confirmation.
-- Other HTTPS AI sites: enable access once from the toolbar popup. A generic adapter supports unambiguous, labelled textarea/contenteditable chat forms; unknown or ambiguous layouts are left unchanged. This is compatibility support, not a guarantee for every platform. The manual workspace remains available.
+- Compact graphite/blue composer with ON/OFF control for ChatGPT, Claude and Gemini; exact outgoing preview and explicit send confirmation.
+- Other HTTPS AI sites: enable access per site or opt into automatic detection across HTTPS sites from the toolbar popup. Choose the AI input manually when detection is ambiguous. A generic adapter supports unambiguous, labelled textarea/contenteditable chat inputs; unknown or ambiguous layouts are left unchanged. This is compatibility support, not a guarantee for every platform. The manual workspace remains available.
+- Attach PNG/JPEG images directly: bundled English OCR extracts text inside the private composer, with an editable recognition preview before privacy analysis. Only reviewed text is shared; original pixels stay local. Image limits: 8 MB and 16 megapixels.
 - Attach text PDFs directly with the composer’s + button. Extracted content enters the same local analysis, disclosure and preview flow as typed text; the original file is never uploaded. Combined prompt/document limit: 12,000 characters, 8 MB and 25 PDF pages. Scanned/encrypted PDFs are rejected by this text path.
 - Bundled quantized BERT NER and English Tesseract OCR; no runtime CDN dependency. Chrome's local model adds context and necessity assessment. Credentials remain masked regardless of model suggestions.
 - Session-scoped mappings, stale-draft cancellation, serialized send confirmation and session-only draft recovery on integrated sites.

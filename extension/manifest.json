@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Incognix",
-  "version": "0.8.1",
-  "description": "Local privacy review for any chatbot, with private composers on ChatGPT, Claude and Gemini. Development preview.",
+  "version": "0.8.2",
+  "description": "Private AI composers, local image OCR and document review. Optional activation on other HTTPS chatbots. Development preview.",
   "minimum_chrome_version": "138",
   "permissions": [
     "storage",
@@ -46,7 +46,7 @@
     }
   ],
   "action": {
-    "default_title": "Open Incognix private workspace",
+    "default_title": "Incognix \u2014 privacy controls",
     "default_popup": "private/popup.html"
   },
   "content_security_policy": {
