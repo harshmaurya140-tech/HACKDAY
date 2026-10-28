@@ -41,3 +41,13 @@ The user reloaded and enabled 0.8.1. The native Chrome toolbar reported Incognix
 Chrome UI showed Incognix 0.8.2 enabled. A fresh Claude session displayed one full-width blue/graphite composer with no nested native toolbar. Synthetic Nora Vale / nora.test@example.org were masked by real local analysis, explicitly previewed, submitted, and restored inside private extension frames in both user prompt and assistant reply. Conversation: https://claude.ai/chat/7c3a5010-3060-4384-a8cd-21bd69875a0d .
 
 A fresh Gemini session produced a real masked preview for the same synthetic test. During confirmed-send control Chrome changed foreground and subsequent observation failed with ScreenCaptureKit -3811. Do not count Gemini delivery/restoration/layout as passed for this revision. ChatGPT and arbitrary additional providers have not received a fresh signed-in 0.8.2 acceptance run. Image OCR was exercised in all three isolated provider fixtures, not in this signed-in smoke test.
+
+## October 29 — 0.8.4 multi-task currency test
+
+Chrome showed 0.8.4 enabled. A fresh signed-in ChatGPT tab received a synthetic five-task prompt containing name, employer, email, phone, address, birth date, government identifiers, bank details and ₹1,25,000. Local analysis ran and a masked prompt reached ChatGPT. Browser observation timed out between analysis and delivery; the review/confirmation interaction was not observed, so do not claim an agent-verified approval sequence. The final provider answer preserved masked tokens and the currency amount. No raw user-provided personal record was used; the test was labelled fictional.
+
+Conversation: https://chatgpt.com/c/6ae25d17-0040-83ec-9e65-0398c1af2cdb .
+
+Restoration failed: the composer bridge changed from the initial bridge to a new one. An observed page link retained `/c/local-chatgpt%3A8917b658-9a05-41cd-b618-cf3630346b7d`, while the final address used the canonical conversation id. The navigation state machine preserved new-to-temporary but discarded temporary-to-canonical. 0.8.5 adds a single bounded transition after a locally initiated send, with expiry and known-chat isolation regressions. Signed-in acceptance of this fix remains pending reload.
+
+The provider explicitly could not calculate age because DOB was masked. Exact placeholder restoration alone cannot repair that computation. This remains a task-utility gap; do not claim that all five tasks succeeded. Native screenshot capture also failed with ScreenCaptureKit -3811; observations above use accessibility text.

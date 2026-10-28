@@ -44,7 +44,9 @@ const call=(type,bridge,data={})=>new Promise(resolve=>handler({type,bridge,...d
  assert.equal(ok.ok,true);
  assert(![...store.keys()].some(k=>k.startsWith('ps-draft:')),'confirmed send clears draft');
  tabURL='https://claude.ai/chat/conversation-123';
- assert.equal((await register(bridge1)).ok,true,'navigation associates the same mapping with the established chat URL');
+ assert.equal((await new Promise(resolve=>handler({type:'REGISTER_TAB',bridge:bridge1},{tab:{id:8},url:'https://claude.ai/new'},resolve))).ok,true,'stale document URL must use the current tab conversation');
+ assert(store.has('ps-conversation:8:claude:conversation-123'));
+ assert.equal((await new Promise(resolve=>handler({type:'REGISTER_TAB',bridge:bridge1},{tab:{id:8},url:'https://chatgpt.com/'},resolve))).ok,false,'cross-origin stale registration rejected');
  assert.equal((await register(bridge2)).ok,true,'reload with a fresh channel can reattach the mapping');
  const old=store.get('ps-bridge:'+bridge1),fresh=store.get('ps-bridge:'+bridge2);
  assert.equal(old.sessionId,fresh.sessionId,'mapping must survive same-tab reload');

@@ -125,13 +125,13 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
  await redactor.screenshot({path:'artifacts/redactor.png',fullPage:true});await redactor.close();
  console.log('PASS raster PDF rebuild: flattened black pixels, no recoverable text/attachments, local OCR network guard');
  const sites=[
-  {url:'https://chatgpt.com/c/fixture',editor:'<textarea id="prompt-textarea"></textarea>',button:'id="composer-submit-button"'},
+  {url:'https://chatgpt.com/',editor:'<textarea id="prompt-textarea"></textarea>',button:'id="composer-submit-button"'},
   {url:'https://claude.ai/chat/fixture',editor:'<div class="ProseMirror" contenteditable="true" role="textbox"></div>',button:'aria-label="Send message"'},
   {url:'https://gemini.google.com/app/fixture',editor:'<rich-textarea><div class="ql-editor" contenteditable="true"></div></rich-textarea>',button:'class="send-button"'}
  ];
  for(const site of sites){
   const host=await context.newPage();host.setDefaultTimeout(15000);
-  await host.route(site.url,r=>r.fulfill({contentType:'text/html',body:`<!doctype html><html><body><div style="max-width:700px;margin:80px auto"><section id="native-shell" style="border-radius:24px;padding:16px;background:#eee"><form>${site.editor}<button type="button" ${site.button}>Send</button></form><div id="native-tools">Attach · Voice</div></section></div><script>window.sent=[];document.querySelector('button').onclick=()=>{const e=document.querySelector('textarea,[contenteditable]');window.sent.push(e.value??e.innerText);if(e.tagName==='TEXTAREA')e.value='';else e.textContent='';};</script></body></html>`}));
+  await host.route(site.url,r=>r.fulfill({contentType:'text/html',body:`<!doctype html><html><body><div style="max-width:700px;margin:80px auto"><section id="native-shell" style="border-radius:24px;padding:16px;background:#eee"><form>${site.editor}<button type="button" ${site.button}>Send</button></form><div id="native-tools">Attach · Voice</div></section></div><script>window.sent=[];document.querySelector('button').onclick=()=>{const e=document.querySelector('textarea,[contenteditable]');window.sent.push(e.value??e.innerText);if(location.hostname==='chatgpt.com'&&window.sent.length===1)history.pushState({},'', '/c/local-chatgpt%3A8917b658-9a05-41cd-b618-cf3630346b7d');if(e.tagName==='TEXTAREA')e.value='';else e.textContent='';};</script></body></html>`}));
   await host.goto(site.url);
   const frame=host.frameLocator('iframe[title="Protected AI composer"]');await frame.locator('#draft').waitFor();
   assert.equal(await host.locator('#native-shell').evaluate(e=>getComputedStyle(e).opacity),'0','whole composer shell including native toolbar must be hidden');
@@ -152,6 +152,25 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
   await frame.locator('#confirm-send').click();
   await frame.locator('#status').filter({hasText:'Sanitized prompt handed'}).waitFor().catch(async e=>{throw Error((await frame.locator('#status').textContent())+'; native='+JSON.stringify(await native.evaluate(e=>e.value??e.innerText))+'; '+e.message);});
   assert.equal((await host.evaluate(()=>window.sent)).length,1);
+  if(new URL(site.url).hostname==='chatgpt.com'){
+   const initialBridge=new URL(privateFrame.url()).searchParams.get('bridge');
+   const waitIndex=key=>service.evaluate(async key=>{
+    for(let i=0;i<50;i++){
+     const data=await chrome.storage.session.get(null);
+     const found=Object.entries(data).find(([name])=>name.startsWith('ps-conversation:')&&name.endsWith(key));
+     if(found)return found[1];
+     await new Promise(r=>setTimeout(r,100));
+    }
+    throw Error('Conversation mapping was not registered');
+   },key);
+   const temporarySession=await waitIndex('chatgpt:local-chatgpt%3A8917b658-9a05-41cd-b618-cf3630346b7d');
+   await host.evaluate(()=>history.pushState({},'', '/c/6ae25d17-0040-83ec-9e65-0398c1af2cdb'));
+   const finalSession=await waitIndex('chatgpt:6ae25d17-0040-83ec-9e65-0398c1af2cdb');
+   assert.equal(finalSession,temporarySession);
+   assert.equal(new URL(host.frames().find(f=>f.url().includes('mode=composer')).url()).searchParams.get('bridge'),initialBridge);
+   console.log('PASS installed ChatGPT temporary and final URL preserve the private session');
+  }
+
   assert(!(await host.evaluate(()=>window.sent[0])).includes('canary@example.org'));
   await frame.locator('#draft').fill('Old draft');await frame.locator('#send').click();await frame.locator('#draft').fill('Revised draft');
   await frame.locator('#status').filter({hasText:'Draft changed'}).waitFor();

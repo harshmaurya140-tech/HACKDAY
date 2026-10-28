@@ -52,7 +52,11 @@ async function handle(msg,sender){
     // established conversation. Only the extension content script can register;
     // the chat identifier is derived from Chrome's sender URL, not from a
     // webpage-supplied session ID. A new chat always starts isolated.
-    const conversation=conversationKey(sender.url||sender.tab.url);
+    // sender.url can retain the document's initial URL after history.pushState.
+    // Use Chrome's current tab URL, never a route supplied by page messages.
+    const liveTab=await chrome.tabs.get(sender.tab.id);
+    if(!await allowed(liveTab.url)||new URL(liveTab.url).origin!==new URL(sender.url||sender.tab.url).origin)throw Error('Registration origin changed');
+    const conversation=conversationKey(liveTab.url);
     const index=conversation?INDEX(sender.tab.id,conversation):null;
     const previous=index?(await chrome.storage.session.get(index))[index]:null;
     const sessionId=current?.sessionId||previous||`tab${sender.tab.id}_${msg.bridge}`;
