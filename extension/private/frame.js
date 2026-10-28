@@ -198,8 +198,8 @@ async function initComposer(){
     $('attachment-info').hidden=true;$('attachment-review').hidden=true;$('extracted-text').value='';$('remove-attachment').hidden=true;$('attach').disabled=false;
     invalidateDraft();status('Document removed');resize();
   });
-  $('attachment-file').addEventListener('change',async()=>{
-    const file=$('attachment-file').files[0];if(!file)return;
+  async function loadAttachment(file){
+    if(!file||busy||!protectionEnabled)return;
     $('attachment-review').hidden=true;$('extracted-text').value='';
     documentController?.abort();const controller=new AbortController();documentController=controller;
     invalidateDraft();attachment=null;documentLoading=true;$('attach').disabled=true;
@@ -207,15 +207,25 @@ async function initComposer(){
     try{
       const {readDocument}=await import('./documents.mjs');
       const isImage=/\.(png|jpe?g)$/i.test(file.name);
-      const result=isImage?await (await import('./image-text.mjs')).readImage(file,{signal:controller.signal,onProgress:p=>{if(!controller.signal.aborted)$('attachment-info').textContent=`Reading image locally… ${p}%`;}}):await readDocument(file,{signal:controller.signal});
+      const result=isImage?await (await import('./image-text.mjs')).readImage(file,{signal:controller.signal,onProgress:p=>{if(!controller.signal.aborted)$('attachment-info').textContent=`Reading image locally… ${p}%`;}}):await readDocument(file,{signal:controller.signal,ocr:true,onProgress:p=>{if(controller===documentController&&!controller.signal.aborted)$('attachment-info').textContent=`Reading scanned PDF locally… ${p}%`;}});
       if(controller!==documentController||controller.signal.aborted)return;
       if(result.text.length+35+$('draft').value.length>12000)throw Error('Prompt and document exceed 12,000 characters. Choose a shorter PDF or excerpt.');
       attachment=result;$('attachment-review').hidden=false;$('attachment-review').open=Boolean(result.ocr);$('extracted-text').value=result.text;
-      $('attachment-info').textContent=`${result.ocr?'Image text ready':'Document attached'} · ${result.pages} page(s) · original stays local. Review extracted text before sending.`;
+      $('attachment-info').textContent=`${result.ocr?(isImage?'Image text ready':'Scanned PDF text ready'):'Document attached'} · ${result.pages} page(s) · original stays local. Review extracted text before sending.`;
       status('Document ready for private review');
     }catch(e){if(!controller.signal.aborted){attachment=null;$('attachment-info').textContent=e.message;status('Document not attached',true);}}
     finally{if(controller===documentController){documentLoading=false;$('attach').disabled=busy;$('attachment-file').value='';resize();}}
-  });
+  }
+  $('attachment-file').addEventListener('change',()=>loadAttachment($('attachment-file').files[0]));
+  const ingestFiles=(event,files)=>{
+    if(!files.length)return;
+    event.preventDefault();event.stopPropagation();
+    if(files.length!==1){status('Attach one file at a time. Your current attachment is unchanged.',true);return;}
+    loadAttachment(files[0]);
+  };
+  $('composer').addEventListener('dragover',event=>{if([...event.dataTransfer.types].includes('Files')){event.preventDefault();event.dataTransfer.dropEffect='copy';}});
+  $('composer').addEventListener('drop',event=>ingestFiles(event,[...event.dataTransfer.files]));
+  $('draft').addEventListener('paste',event=>ingestFiles(event,[...(event.clipboardData?.files||[])]));
   $('draft').addEventListener('input',()=>{analysisController?.abort();revision++;current=null;previewId=null;$('preview').hidden=true;$('permission').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});message({type:'SAVE_EDITOR',text:$('draft').value}).catch(()=>{});});
   $('preview-cancel').addEventListener('click',()=>{if(busy)return;previewId=null;current=null;$('preview').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});resize();});
   $('confirm-send').addEventListener('click',async()=>{

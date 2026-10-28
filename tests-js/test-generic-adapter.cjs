@@ -12,5 +12,9 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findComposer()?.getAttribute('aria-label')),'Ask anything','formless labelled editors supported');
  await p.evaluate(()=>{const e=document.querySelector('[contenteditable]');e.removeAttribute('aria-label');window.__privacyShieldAdapter.selectedComposer=e;});
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findComposer()?.isContentEditable),true,'explicit selection supports unlabelled editors');
+ await p.evaluate(()=>{document.body.innerHTML='<section><textarea placeholder="Ask anything"></textarea><button type="button">Send</button><button style="display:none" type="submit">Send</button></section>';});
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))?.textContent),'Send','plain labelled send is supported; hidden duplicates ignored');
+ await p.evaluate(()=>document.querySelector('section').insertAdjacentHTML('beforeend','<button>Submit</button>'));
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))),null,'multiple visible send controls are ambiguous');
  console.log('PASS optional-site adapter selects unique chat input and rejects unrelated/ambiguous forms');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -5,7 +5,7 @@ source+='\nglobalThis.readDocument=readDocument;';
 function harness(document){
  let fire,destroyed=0;
  const task={promise:Promise.resolve(document),destroy:async()=>{destroyed++;}};
- const context={pdfjs:{getDocument:()=>task},TextDecoder,Uint8Array,URL,setTimeout:fn=>{fire=fn;return 1;},clearTimeout:()=>{}};
+ const context={pdfjs:{getDocument:()=>task},TextDecoder,Uint8Array,URL,AbortController,setTimeout:fn=>{fire=fn;return 1;},clearTimeout:()=>{}};
  vm.createContext(context);vm.runInContext(source,context);
  return {read:context.readDocument,timeout:()=>fire(),password:()=>task.onPassword(),destroyed:()=>destroyed};
 }

@@ -297,6 +297,7 @@
         return true;
       };
       const findEnabledSend=(scope)=>{
+        if(adapter.id==='generic'&&adapter.findSend)return adapter.findSend(scope);
         if(adapter.id==='generic'&&scope?.querySelectorAll){
           const buttons=new Set();
           for(const selector of adapter.send)for(const button of scope.querySelectorAll(selector)){
@@ -490,7 +491,7 @@
   chrome.runtime.onMessage.addListener((msg,sender,respond)=>{
     if(!checkRuntime())return;
     if(msg.type==='PICK_COMPOSER'){if(!privateComposer?.isConnected)pickComposer();respond({ok:true});return;}
-    if(msg.type==='INCOGNIX_STATUS'){respond({ok:true,installed:Boolean(privateComposer?.isConnected),site:adapter.id});return;}
+    if(msg.type==='INCOGNIX_STATUS'){respond({ok:true,installed:Boolean(privateComposer?.isConnected),enabled:protectionEnabled&&Boolean(privateComposer?.isConnected),site:adapter.id});return;}
     if(msg.bridge!==bridge){respond({ok:false,error:'Wrong conversation'});return;}
     if(msg.type==='SET_PROTECTION_ENABLED'){
       if(typeof msg.enabled!=='boolean'){respond({ok:false,error:'Invalid toggle state'});return;}

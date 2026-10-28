@@ -90,6 +90,18 @@
     }
     return [];
   };
+  data.findSend=(scope)=>{
+    if(!scope?.querySelectorAll)return null;
+    const buttons=[...scope.querySelectorAll('button')].filter(button=>{
+      if(button.disabled||button.getAttribute('aria-disabled')==='true')return false;
+      const label=[button.getAttribute('aria-label'),button.getAttribute('title'),button.getAttribute('data-testid')].filter(Boolean).join(' ');
+      if(/stop|abort|cancel|record|microphone|voice|dictate/i.test(label))return false;
+      const known=data.send.some(selector=>button.matches(selector));
+      const named=/^(send|send message|send prompt|ask|submit)$/i.test((button.textContent||'').trim());
+      return (known||named)&&button.getClientRects().length>0&&getComputedStyle(button).visibility!=='hidden';
+    });
+    return buttons.length===1?buttons[0]:null;
+  };
   // Editors inside AI-generated writing canvases may also be ProseMirror.
   // Prefer the *conversation* input at the bottom of the viewport, not the
   // first arbitrary contenteditable node. Do not interact with stale/hidden

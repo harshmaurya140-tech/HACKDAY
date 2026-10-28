@@ -25,6 +25,20 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
   return rejected;
  });
  assert.equal(rejectedDocuments,6,'unsupported/malformed documents must fail closed');
+ const scanned=await page.evaluate(async()=>{
+  const c=document.createElement('canvas');c.width=1000;c.height=160;
+  const x=c.getContext('2d');x.fillStyle='white';x.fillRect(0,0,c.width,c.height);x.fillStyle='black';x.font='32px Arial';x.fillText('Contact scan.canary@example.org',30,85);
+  const pdf=await PDFLib.PDFDocument.create(),im=await pdf.embedPng(c.toDataURL());pdf.addPage([1000,160]).drawImage(im,{x:0,y:0,width:1000,height:160});
+  const {readDocument}=await import('./documents.mjs');
+  const file=new File([await pdf.save()],'scan.pdf');
+  const result=await readDocument(file,{ocr:true});
+  const controller=new AbortController();controller.abort();
+  let cancelled=false;try{await readDocument(file,{ocr:true,signal:controller.signal});}catch{cancelled=true;}
+  return {text:result.text,ocr:result.ocr,cancelled};
+ });
+ assert(scanned.ocr&&scanned.text.includes('scan.canary@example.org')&&scanned.cancelled);
+ console.log('PASS real scanned-PDF OCR and cancellation');
+
  console.log('PASS six real browser document rejection cases');
  const started=Date.now();
  const ner=await page.evaluate(()=>IncognixNER.extract('Sarah Johnson works at Microsoft in London.'));
@@ -155,12 +169,20 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
   assert.equal(await frame.locator('#attachment-info').isVisible(),false);
   // Real image OCR inside the private attachment flow (semantic stage mocked).
   const imageData=await privateFrame.evaluate(()=>{const c=document.createElement('canvas');c.width=900;c.height=150;const x=c.getContext('2d');x.fillStyle='white';x.fillRect(0,0,900,150);x.fillStyle='black';x.font='32px Arial';x.fillText('Contact: image.canary@example.org',25,80);return c.toDataURL('image/png').split(',')[1];});
-  await frame.locator('#attachment-file').setInputFiles({name:'private-image.png',mimeType:'image/png',buffer:Buffer.from(imageData,'base64')});
+  await privateFrame.evaluate(data=>{
+   const bytes=Uint8Array.from(atob(data),c=>c.charCodeAt(0));
+   const transfer=new DataTransfer();transfer.items.add(new File([bytes],'private-image.png',{type:'image/png'}));
+   document.querySelector('#draft').dispatchEvent(new ClipboardEvent('paste',{clipboardData:transfer,bubbles:true,cancelable:true}));
+  },imageData);
   await frame.locator('#attachment-info').filter({hasText:'Image text ready'}).waitFor({timeout:90000});
   assert((await frame.locator('#extracted-text').inputValue()).includes('image.canary@example.org'));
   assert(!(await host.locator('body').textContent()).includes('image.canary@example.org'));
   await frame.locator('#send').click();await frame.locator('#preview').waitFor({state:'visible'});
   assert(!(await frame.locator('#outgoing').inputValue()).includes('image.canary@example.org'));
+  await privateFrame.evaluate(()=>{const d=new DataTransfer();d.items.add(new File(['ignored'],'blocked.txt'));document.querySelector('#composer').dispatchEvent(new DragEvent('drop',{dataTransfer:d,bubbles:true,cancelable:true}));});
+  await frame.locator('#attachment-info').filter({hasText:'Document attached'}).waitFor();
+  assert.equal(await frame.locator('#preview').isVisible(),false,'dropping a replacement invalidates the previous preview');
+  await frame.locator('#send').click();await frame.locator('#preview').waitFor({state:'visible'});
   await frame.locator('#preview-cancel').click();
   await frame.locator('#remove-attachment').click();
   // Idle editor should fit a short native-style input, rather than a dashboard.

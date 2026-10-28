@@ -1,3 +1,12 @@
+## 0.8.3 — attachment workflow and accurate status
+
+- Paste screenshots into the private draft or drop one supported file onto the composer. Replacing an attachment cancels its processing and invalidates earlier previews.
+- Composer PDF attachments now OCR image-only pages locally with the bundled English model. Limits: 10 PDF pages when OCR is needed, 20M total rendered pixels and a three-minute document deadline. Text-only workspace behavior is unchanged.
+- OCR cancellation settles promptly even during worker startup; late-created workers terminate.
+- Generic adapters recognize a unique plain-text Send/Ask/Submit button inside the bound composer, ignoring hidden/disabled controls and rejecting ambiguity.
+- Toolbar status explicitly reports protection OFF instead of claiming an installed composer is active.
+- This is an incremental development release. Broader live-site acceptance, multiple attachments, multilingual quality evaluation and visual-image sharing remain outstanding.
+
 ## 0.8.2 — composer images and wider activation
 
 - PNG/JPEG attachments now use the bundled local OCR, with editable extracted text and the existing mandatory privacy preview. Original pixels remain local.

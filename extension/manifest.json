@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Incognix",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Private AI composers, local image OCR and document review. Optional activation on other HTTPS chatbots. Development preview.",
   "minimum_chrome_version": "138",
   "permissions": [
