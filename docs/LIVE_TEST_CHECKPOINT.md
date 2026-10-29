@@ -51,3 +51,15 @@ Conversation: https://chatgpt.com/c/6ae25d17-0040-83ec-9e65-0398c1af2cdb .
 Restoration failed: the composer bridge changed from the initial bridge to a new one. An observed page link retained `/c/local-chatgpt%3A8917b658-9a05-41cd-b618-cf3630346b7d`, while the final address used the canonical conversation id. The navigation state machine preserved new-to-temporary but discarded temporary-to-canonical. 0.8.5 adds a single bounded transition after a locally initiated send, with expiry and known-chat isolation regressions. Signed-in acceptance of this fix remains pending reload.
 
 The provider explicitly could not calculate age because DOB was masked. Exact placeholder restoration alone cannot repair that computation. This remains a task-utility gap; do not claim that all five tasks succeeded. Native screenshot capture also failed with ScreenCaptureKit -3811; observations above use accessibility text.
+
+## 0.8.5 signed-in ChatGPT restoration retest
+
+Chrome UI confirmed Incognix 0.8.5 enabled. The agent opened a fresh ChatGPT tab and entered: “Fictional privacy test. Nora Vale uses nora.test@example.org. Write one sentence greeting her by name, mentioning her email and the amount ₹1,25,000. Preserve every placeholder token exactly as written.”
+
+Actual local analysis completed. The exact outgoing preview contained PERSON, EMAIL and AMOUNT placeholders; the agent inspected it and clicked Send reviewed text. The observed route changed from `/c/local-chatgpt%3Aa3884451-2562-4753-b166-de424e07cd90` to `/c/6ae37f63-8224-83ee-9bc0-884d6dc978b2`. The composer and both response frames retained bridge c14147e5-bf8c-4f2f-a8b2-4dc828dbc4df. Both user prompt and assistant reply displayed Nora Vale, nora.test@example.org and ₹1,25,000 inside extension-origin private response frames.
+
+A normal page refresh created bridge a47549cb-b306-4c68-9c45-bc665e12b817. The provider text initially showed placeholders while frames loaded, then both private frames restored the same three original values. This confirms same-tab refresh reattachment for this live conversation.
+
+Conversation: https://chatgpt.com/c/6ae37f63-8224-83ee-9bc0-884d6dc978b2 .
+
+Result: PASS for actual local review, explicit reviewed send, temporary-to-final URL transition, user/assistant restoration and normal refresh. This narrow test does not establish all-provider acceptance, document/voice parity, or DOB-dependent arithmetic. No raw personal data from the user's supplied record was used.
