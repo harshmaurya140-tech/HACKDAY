@@ -16,5 +16,12 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))?.textContent),'Send','plain labelled send is supported; hidden duplicates ignored');
  await p.evaluate(()=>document.querySelector('section').insertAdjacentHTML('beforeend','<button>Submit</button>'));
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))),null,'multiple visible send controls are ambiguous');
+ await p.evaluate(()=>{document.body.innerHTML='<section><textarea placeholder="Message"></textarea><div role="button" aria-label="Send message">↑</div></section>';});
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))?.getAttribute('role')),'button');
+ await p.evaluate(()=>document.querySelector('[role="button"]').setAttribute('aria-disabled','true'));
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))),null);
+ await p.route('https://deepseek.com/**',r=>r.fulfill({contentType:'text/html',body:'<div class="ds-input-wrapper"><textarea class="hero-input" maxlength="800" placeholder="Ask anything"></textarea><button aria-pressed="true" aria-label="Search"></button><button class="ds-hero-send-btn">↑</button></div>'}));
+ await p.goto('https://deepseek.com/en/');await p.addScriptTag({path:path.resolve('extension/content/adapters.js')});
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('.ds-input-wrapper'))?.className),'ds-hero-send-btn');
  console.log('PASS optional-site adapter selects unique chat input and rejects unrelated/ambiguous forms');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

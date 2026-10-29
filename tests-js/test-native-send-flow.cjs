@@ -42,5 +42,10 @@ function setup({native='unrelated',buttonDisabled=false,accepted=true}={}){
   const c=setup({native:'',buttonDisabled:true});
   await assert.rejects(c.sendSanitized('Staged prompt'),/send control unavailable/);
   assert.equal(c.input.value,'','unsent injected value removed if site has no send control');
+  const limited=setup({native:''});
+  limited.input.hasAttribute=n=>n==='maxlength';limited.input.getAttribute=()=> '800';
+  await assert.rejects(limited.sendSanitized('x'.repeat(801)),/at most 800 characters/);
+  assert.equal(limited.input.value,'');assert.equal(limited.marked(),0);
+  assert.equal((await limited.sendSanitized('x'.repeat(800))).ok,true);
   console.log('PASS: real sanitized-send function blocks unrelated drafts, recovers by consent, retries owned staged text and handles disabled send');
 })().catch(e=>{console.error(e);process.exitCode=1});

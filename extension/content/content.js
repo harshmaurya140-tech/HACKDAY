@@ -281,6 +281,8 @@
       // may be replaced, but ONLY while the same editor/channel remains active.
       if(!nativeDraft.mayReplace(input,bridge,previous,text))
         throw Error('Native textbox contains an existing draft. Use “Discard website draft” to clear it before retrying.');
+      const maxLength=Number(input.getAttribute?.('maxlength'));
+      if(input.hasAttribute?.('maxlength')&&Number.isInteger(maxLength)&&maxLength>=0&&text.length>maxLength)throw Error(`This website accepts at most ${maxLength} characters; reviewed text has ${text.length}. Shorten the draft or copy reviewed text into the full chat app.`);
       updateTextInput(input,text);
       nativeDraft.note(input,bridge,text);
       if(!nativeDraft.same(currentValue(input),text))throw Error('Could not verify sanitized input.');
@@ -343,7 +345,7 @@
         // stale invisible textbox blocking the next protected send.
         if(nativeDraft.owns(input,bridge,currentValue(input)))updateTextInput(input,'');
         nativeDraft.reset();
-        throw Error('Site send control unavailable. Protected draft retained; try refreshing the page.');
+        throw Error('Site send control unavailable. Your private draft is retained. Copy reviewed text into the full chat app, or try again after the page finishes loading.');
       }
       // Only call success when the native editor clears or a new user message
       // appears. We never blindly send the same prompt twice on a timeout.

@@ -97,7 +97,7 @@ function updateProtectionUI(enabled){
   resize();
 }
 function status(text,error=false){const el=$('status');el.textContent=text;el.className='status '+(error?'error':'ok');}
-function markBusy(on){for(const id of ['attach','remove-attachment','extracted-text','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
+function markBusy(on){for(const id of ['copy-reviewed','attach','remove-attachment','extracted-text','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
 function makeChoice(e){
   const box=document.createElement('div');box.className='choice';
   const heading=document.createElement('div');heading.className='choice-header';
@@ -228,6 +228,11 @@ async function initComposer(){
   $('draft').addEventListener('paste',event=>ingestFiles(event,[...(event.clipboardData?.files||[])]));
   $('draft').addEventListener('input',()=>{analysisController?.abort();revision++;current=null;previewId=null;$('preview').hidden=true;$('permission').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});message({type:'SAVE_EDITOR',text:$('draft').value}).catch(()=>{});});
   $('preview-cancel').addEventListener('click',()=>{if(busy)return;previewId=null;current=null;$('preview').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});resize();});
+  $('copy-reviewed').addEventListener('click',async()=>{
+    if(busy||!current||!previewId||$('preview').hidden)return;
+    try{await navigator.clipboard.writeText($('outgoing').value);status('Reviewed text copied. Paste it into the chatbot; nothing was sent automatically.');}
+    catch{status('Clipboard unavailable. Select and copy the reviewed text above.',true);$('outgoing').focus();$('outgoing').select();}
+  });
   $('confirm-send').addEventListener('click',async()=>{
     if(busy||!current||!previewId)return;
     markBusy(true);$('draft').readOnly=true;
