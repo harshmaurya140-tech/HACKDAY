@@ -70,6 +70,7 @@ if('ResizeObserver' in window){
 let current=null;
 let revision=0;
 let analysisController;
+let analysisCancelled=false;
 let previewId=null;
 let busy=false;
 let lastApprovedDecisions=null;
@@ -160,7 +161,7 @@ async function doSend(){
   if(text.length>12000){status('Prompt and document exceed 12,000 characters. Use a shorter document or excerpt.',true);return;}
   current=null;previewId=null;$('preview').hidden=true;
   const started=revision;
-  markBusy(true);
+  analysisCancelled=false;markBusy(true);$('cancel-analysis').hidden=false;
   try{
     status('Scanning locally…');
     analysisController=new AbortController();
@@ -181,10 +182,11 @@ async function doSend(){
       markBusy(false);
       await prepareAndSend({});
     }
-  }catch(e){status(e.message,true); /* Fail closed: no Python or cloud fallback. */}
-  finally{markBusy(false);resize();}
+  }catch(e){status(analysisCancelled?'Analysis cancelled. Your draft is retained.':e.message,!analysisCancelled); /* Fail closed. */}
+  finally{$('cancel-analysis').hidden=true;markBusy(false);resize();}
 }
 async function initComposer(){
+  $('cancel-analysis').addEventListener('click',()=>{analysisCancelled=true;analysisController?.abort();window.IncognixNER?.dispose();revision++;status('Analysis cancelled. Your draft is retained.');});
   $('composer').hidden=false;
   $('composer').dataset.protection='on';
   $('draft').maxLength=12000;
@@ -314,6 +316,8 @@ function syncResponseToggle(){
   toggle.textContent=expanded?'Show less':'Show more';
 }
 async function initResponse(){
+  let restoredCopy='';
+  $('copy-restored').addEventListener('click',async()=>{if(!responseReady)return;try{await navigator.clipboard.writeText(restoredCopy);$('copy-status').textContent='Copied';}catch{$('copy-status').textContent='Copy unavailable. Select the restored text to copy it.';}});
   $('response').hidden=false;
   // Never add extension commentary or a shield heading to the assistant answer.
   $('response-label').hidden=true;
@@ -336,6 +340,7 @@ async function initResponse(){
       // website's own sanitized response rather than inject explanatory text.
       responseReady=!data.unresolved;
       const next=responseReady?data.text:'';
+      restoredCopy=next;$('copy-restored').hidden=!responseReady;$('copy-status').textContent='';
       // Gemini's answer is transferred as a *safe structural tree* so bullet
       // lists, paragraphs, headings, and code keep their intended formatting.
       // Never use innerHTML or render private values into the host site DOM.
@@ -356,7 +361,7 @@ async function initResponse(){
     }catch(e){
       // Fail without altering the displayed AI response.
       $('restored-text').textContent='';
-      responseReady=false;
+      responseReady=false;restoredCopy='';$('copy-restored').hidden=true;
       await resize();
     }finally{
       refreshing=false;

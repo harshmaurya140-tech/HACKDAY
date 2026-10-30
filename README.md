@@ -1,4 +1,4 @@
-# Incognix 0.8.6 — development prerelease
+# Incognix 0.9.0 — development prerelease
 
 Incognix reviews sensitive text locally before you share it with an AI chatbot. It combines bundled BERT named-entity recognition, deterministic credential checks, and Chrome's on-device language model for contextual detection and necessity decisions. Users need no Python service, account, API key or separately installed model server.
 
@@ -43,3 +43,5 @@ Load `extension/` after building. Packages and SHA-256 checksums are written to 
 ## Release status
 
 Based on main `afdc1e0e8f82c2b63cb4ccffe057cdb863be03ad` (v0.7.1). Current automated tests use synthetic data and isolated browser fixtures. A signed-in synthetic smoke test completed real local analysis and masked sends on all three providers; all three restored replies; ChatGPT and Gemini display fixes passed live retesting. Broad provider acceptance and semantic-model quality evaluation remain outstanding; see [live evidence](docs/LIVE_TEST_CHECKPOINT.md). DOCX, audio transcription, managed enterprise policy and universal automatic file-upload protection are not implemented. See [release notes](RELEASE_NOTES.md).
+
+See [final release readiness](docs/RELEASE_READINESS.md) for implemented improvements and unresolved release gates.

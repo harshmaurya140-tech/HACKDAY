@@ -172,6 +172,13 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
   }
 
   assert(!(await host.evaluate(()=>window.sent[0])).includes('canary@example.org'));
+  await privateFrame.evaluate(()=>{LocalPrivacyAI.analyze=async(text,{signal})=>new Promise((resolve,reject)=>{signal.addEventListener('abort',()=>reject(Error('cancelled')),{once:true});});});
+  await frame.locator('#draft').fill('Retain this cancelled draft');await frame.locator('#send').click();
+  await frame.locator('#cancel-analysis').click();
+  await frame.locator('#status').filter({hasText:'Analysis cancelled'}).waitFor();
+  assert.equal(await frame.locator('#draft').inputValue(),'Retain this cancelled draft');
+  assert.equal((await host.evaluate(()=>window.sent)).length,1);
+  await privateFrame.evaluate(()=>{LocalPrivacyAI.analyze=async()=>{await new Promise(r=>setTimeout(r,100));return {entities:[]};};});
   await frame.locator('#draft').fill('Old draft');await frame.locator('#send').click();await frame.locator('#draft').fill('Revised draft');
   await frame.locator('#status').filter({hasText:'Draft changed'}).waitFor();
   assert.equal((await host.evaluate(()=>window.sent)).length,1,'stale analysis must not send');

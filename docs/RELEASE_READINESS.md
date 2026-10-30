@@ -1,0 +1,35 @@
+# Final release readiness
+
+Status: development prerelease. Do not label this build universally compatible or production audited.
+
+## Implemented in this release-hardening pass
+
+- Local calendar-age calculation for one explicit self-labelled DOB and one explicit age-as-of date (English full month names or ISO dates, 1900–2200). The derived result uses a private AGE token and is restored locally. Ambiguous dates, multiple DOBs, relative dates and invalid dates do not produce a result. Calendar month-end anniversaries clamp to the last day of the month. The provider must preserve the result token.
+- Cancel local analysis while retaining the private draft.
+- Copy restored text from inside the private response frame, rather than the website's masked copy action.
+- Wrapping review controls and visible keyboard focus.
+- CI installs Chromium before JavaScript suites which launch Playwright. Remote CI success is not yet verified.
+
+## Release gates and pending features
+
+| Area | State | Required evidence or work |
+|---|---|---|
+| Text privacy | Bundled NER + Chrome contextual model + format rules | Broader adversarial, multilingual and false-negative corpus; no perfect detection claim |
+| Local age | Implemented, deterministic unit coverage | Signed-in provider must preserve AGE token; this is not arbitrary private arithmetic |
+| Website compatibility | Three primary adapters; optional generic sites; DeepSeek landing button observed | Fresh signed-in matrix for ChatGPT, Claude, Gemini, DeepSeek and additional providers, including edits, retries, reloads and navigation |
+| Unknown websites | Generic detection and explicit input picker; reviewed-copy recovery | Shadow DOM, embedded cross-origin editors, unsupported rich editors and unknown reply structures need dedicated support; never claim every site works |
+| Images and scanned PDFs | Local English OCR; review extracted text | Signed-in attachment workflows, handwriting/non-English evaluation; original visual meaning is not preserved by OCR |
+| Visual redaction | Separate local raster export with mandatory visual review | Independent security review and more precision/metadata/accessibility fixtures |
+| Office files | Not implemented | Bounded DOCX/XLSX/PPTX extraction, embedded-content handling and malformed/archive-bomb corpus |
+| Voice/video | Not implemented | Local-only transcription, microphone consent, bounded models, cancellation, multimodal privacy tests; never silently use cloud speech |
+| Multiple attachments | One at a time | Per-file queues, aggregate memory limits, removal/review state, cancellation and privacy tests |
+| Private calculations | Narrow age helper | General deterministic task operations, explicit scope and provenance; do not replace arbitrary model answers with guessed results |
+| Copy controls | Reviewed-copy and private-response copy implemented | Signed-in clipboard permission/failure and streaming tests |
+| Recovery | Draft preservation and explicit failures | Crash, browser restart, extension upgrade and model download interruption matrix |
+| Accessibility | Focus styles and responsive controls | Keyboard-only and screen-reader acceptance across supported providers |
+| Distribution | Reproducible ZIPs and pinned assets | Clean-install checks on supported Chrome/hardware, remote CI green, store policy/privacy disclosures, licensing review |
+| Security | Isolation and consent tests | Independent review of bridge authorization, page spoofing, hostile documents and data retention |
+
+## Shipping scope
+
+A final release should publish a versioned support matrix with precise limits and last-tested dates. Generic activation is best-effort integration, not a network firewall. Unsupported attachments must fail visibly and retain the draft. No raw private data may be sent merely to improve compatibility. Keep the development label until required acceptance and security gates have evidence.

@@ -205,3 +205,9 @@ textarea{font:inherit;display:block;width:100%;border:0;resize:vertical;outline:
 :root[data-privacy-site][data-privacy-role="user"] .restored{color:inherit;font:14px/1.6 ui-sans-serif,system-ui,sans-serif;max-height:360px}
 :root[data-privacy-site][data-privacy-role="assistant"] #response{padding:14px 2px;background:transparent}
 :root[data-privacy-site][data-privacy-role="assistant"] .restored{font:15px/1.75 ui-sans-serif,system-ui,sans-serif;color:var(--ps-text)}
+
+/* Keep added recovery and copy controls usable in narrow composers. */
+.top{flex-wrap:wrap}.toolbar{flex-wrap:wrap}
+button:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid #6486ff;outline-offset:2px}
+#copy-restored{background:transparent;color:var(--ps-text);font-size:11px;padding:3px 6px}
+#copy-status{font-size:11px;margin-left:6px}.response-actions{align-items:center;gap:6px}

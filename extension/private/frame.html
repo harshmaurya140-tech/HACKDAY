@@ -10,7 +10,7 @@
   <main id="composer" hidden>
     <div class="top">
       <button type="button" id="protection-toggle" class="protection-switch" role="switch" aria-checked="true" aria-label="Turn privacy protection off"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span id="protection-state">Incognix · on</span></button>
-      <span id="status" class="status" role="status" aria-live="polite">Checking local protection…</span>
+      <button id="cancel-analysis" class="secondary" hidden>Cancel analysis</button><span id="status" class="status" role="status" aria-live="polite">Checking local protection…</span>
     </div>
     <textarea id="draft" rows="1" placeholder="Message privately…"></textarea>
     <section id="permission" hidden>
@@ -37,7 +37,7 @@
   <main id="response" hidden>
     <div id="response-label" class="response-label" hidden></div>
     <div id="restored-text" class="restored"></div>
-    <div class="response-actions"><button id="response-toggle" class="response-toggle" hidden type="button">Show more</button></div>
+    <div class="response-actions"><button id="copy-restored" type="button" hidden>Copy restored text</button><span id="copy-status" role="status"></span><button id="response-toggle" class="response-toggle" hidden type="button">Show more</button></div>
   </main>
   <script src="../core/rich-response.js"></script>
   <script src="../core/gliner2-multi.js"></script>

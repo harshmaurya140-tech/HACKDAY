@@ -51,3 +51,16 @@ All JavaScript tests and the full installed-extension browser suite passed after
 Live read-only DeepSeek landing-page inspection confirmed `textarea.hero-input[maxlength="800"]` inside `.ds-input-wrapper`, an unnamed `button.ds-hero-send-btn`, and DeepThink/Search toggle buttons. Added an origin-scoped selector for that send button; generic detection now supports named ARIA button controls, title labels and submit inputs while rejecting disabled/ambiguous/toggle controls. Added pre-staging maxlength validation and explicit Copy reviewed text recovery. The original page initially failed with its own ChunkLoadError and recovered on reload. No successful live DeepSeek submission or cross-origin mapping transfer is claimed.
 
 Syntax, all JavaScript suites and the complete browser suite passed. Regressions cover observed DeepSeek DOM, custom/disabled buttons and 800/801-character native-send boundaries. Existing ChatGPT, Claude and Gemini fixture flows remain passing. Clipboard action is implemented but has not received a signed-in browser acceptance test. Universal website compatibility remains unverified.
+
+## 0.9.0 release-hardening validation — October 30
+
+Verified in the authoritative local checkout on `codex/incognix-release`:
+
+- `npm run check`, `npm test`, `npm run test:browser`, and `npm run verify:model` passed.
+- The installed-extension browser fixtures passed explicit cancellation with draft retention and no additional send on ChatGPT, Claude and Gemini, alongside existing stale-analysis, PDF/image OCR, consent and compact-layout checks.
+- Local calendar-age tests passed the supplied DOB/reference-date example (24 years, 7 months, 13 days), leap-day convention, invalid/future/ambiguous inputs, masked DOB and private AGE-token restoration.
+- `node tests-js/test-private-copy.cjs` passed restored-text copying, clipboard denial feedback, and hiding copy when mappings are unresolved. This uses the actual frame script with a mocked bridge and clipboard; it does not verify native clipboard permissions on signed-in websites.
+- The full browser suite exercised real bundled ONNX/WASM NER and English OCR. Contextual semantic inference remained mocked in provider fixtures. Model/runtime and OCR pinned assets verified.
+- No external requests were observed from the tested workspace and redactor pages. This is not a whole-browser network/privacy audit.
+
+The new age/cancel/copy features still need signed-in acceptance after reloading version 0.9.0. Remote CI has not been checked for this revision. See RELEASE_READINESS.md for explicit pending features and final-release gates.

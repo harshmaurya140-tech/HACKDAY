@@ -158,6 +158,29 @@
     session.dummyToReal[token]=e.text;
     return token;
   }
+  // Deliberately narrow: one self-labelled DOB, one explicit reference date.
+  // Calendar arithmetic stays local; the provider gets only a result token.
+  function localAge(text){
+    const months=['january','february','march','april','may','june','july','august','september','october','november','december'];
+    const date='(?:\\d{4}-\\d{2}-\\d{2}|\\d{1,2} (?:'+months.join('|')+') \\d{4})';
+    const births=[...text.matchAll(new RegExp('\\bmy (?:date of birth|dob) (?:is |: ?)?('+date+')','gi'))];
+    const refs=[...text.matchAll(new RegExp('\\b(?:my )?(?:exact )?age as of ('+date+')','gi'))];
+    if(births.length!==1||refs.length!==1)return null;
+    const parse=value=>{
+      const iso=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+      const parts=value.toLowerCase().split(' ');
+      const y=iso?+iso[1]:+parts[2],m=iso?+iso[2]-1:months.indexOf(parts[1]),d=iso?+iso[3]:+parts[0];
+      const result=new Date(Date.UTC(y,m,d));
+      return y>=1900&&y<=2200&&result.getUTCFullYear()===y&&result.getUTCMonth()===m&&result.getUTCDate()===d?result:null;
+    };
+    const birth=parse(births[0][1]),end=parse(refs[0][1]);
+    if(!birth||!end||end<birth)return null;
+    const shifted=n=>{const y=birth.getUTCFullYear()+Math.floor((birth.getUTCMonth()+n)/12),m=(birth.getUTCMonth()+n)%12;return new Date(Date.UTC(y,m,Math.min(birth.getUTCDate(),new Date(Date.UTC(y,m+1,0)).getUTCDate())));};
+    let total=(end.getUTCFullYear()-birth.getUTCFullYear())*12+end.getUTCMonth()-birth.getUTCMonth();
+    if(shifted(total)>end)total--;
+    const days=Math.round((end-shifted(total))/86400000);
+    return {text:`${Math.floor(total/12)} years, ${total%12} months, ${days} days`,birth:births[0][1]};
+  }
   function prepare(session,draft,decisions={}) {
     if(!draft || typeof draft.text!=='string' || !Array.isArray(draft.entities))throw Error('Invalid draft');
     let text=draft.text;
@@ -184,6 +207,11 @@
       if(text.slice(e.start,e.end)!==e.text)throw Error('Entity alignment changed; sending blocked.');
       text=text.slice(0,e.start)+replacement+text.slice(e.end);
     }
+    const age=localAge(draft.text);
+    if(age){
+      const result=tokenFor(session,{type:'AGE',text:age.text});
+      text+='\n\n[Incognix local calculation] The requested age was calculated locally using calendar months (month-end dates clamped). For the exact age answer, reproduce this result token verbatim: '+result+'. Do not infer a birth date from it.';
+    }
     return {sanitized_text:text,replacements};
   }
   function restore(session,text) {
@@ -192,7 +220,7 @@
     const unresolved=[...restored.matchAll(TOKEN)].some(m=>!Object.prototype.hasOwnProperty.call(session.dummyToReal,m[0]));
     return {text:restored,unresolved};
   }
-  const api={confidentialTerms,typeOf,canAskForDisclosure,spansFor,detectFormats,mergeDetected,newSession,prepare,restore,TOKEN};
+  const api={localAge,confidentialTerms,typeOf,canAskForDisclosure,spansFor,detectFormats,mergeDetected,newSession,prepare,restore,TOKEN};
   root.PrivacyCore=api;
   if(typeof module!=='undefined' && module.exports)module.exports=api;
 })(typeof self!=='undefined'?self:globalThis);
