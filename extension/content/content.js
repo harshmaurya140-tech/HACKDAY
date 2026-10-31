@@ -117,7 +117,8 @@
     f.setAttribute('title',mode==='composer'?'Protected AI composer':mode==='off-toggle'?'Turn privacy protection back on':'Private restored message');
     // Required for Chrome Prompt API in a cross-origin extension iframe.
     // An AI site's Permissions-Policy header may still disallow delegation.
-    f.allow='language-model';
+    // Delegate write-only clipboard access for explicit copy clicks in the private frame.
+    f.allow='language-model; clipboard-write';
     f.style.cssText='display:block;box-sizing:border-box;flex:0 0 auto;min-width:0;max-width:100%;width:100%;height:'+ (mode==='composer'? '140px':'75px')+';border:0;background:transparent;position:relative;z-index:1;overflow:hidden;clear:both;margin:0 auto;';
     return f;
   }

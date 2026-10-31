@@ -63,3 +63,25 @@ A normal page refresh created bridge a47549cb-b306-4c68-9c45-bc665e12b817. The p
 Conversation: https://chatgpt.com/c/6ae37f63-8224-83ee-9bc0-884d6dc978b2 .
 
 Result: PASS for actual local review, explicit reviewed send, temporary-to-final URL transition, user/assistant restoration and normal refresh. This narrow test does not establish all-provider acceptance, document/voice parity, or DOB-dependent arithmetic. No raw personal data from the user's supplied record was used.
+
+## 0.9.0 signed-in Claude age and cancellation — October 30
+
+User confirmed reloading 0.9.0. Used a new Claude conversation because ChatGPT had an unrelated saved native draft; that draft was not changed or sent.
+
+Synthetic prompt: “Synthetic privacy test using fictional details. My name is Nora Vale. My date of birth is 15 March 2002. Calculate my exact age as of 28 October 2026. Reply in one sentence with my name and the age. Preserve every private placeholder exactly; use any supplied local calculation result.”
+
+- Cancelled actual Chrome local analysis; status confirmed cancellation, private draft remained intact and native Claude editor stayed empty. Retried successfully.
+- Actual local inference requested choices for both dates, labelled OTHER. Kept both hidden. The outgoing preview contained PERSON, two OTHER tokens and an AGE result token; no raw name, dates or derived age appeared in the preview.
+- Explicit reviewed send reached https://claude.ai/chat/b9ac3171-4528-4c31-8dbd-0d1b6816de22 . The original bridge survived navigation.
+- Private assistant frame restored: “Nora Vale., your exact age as of 28 October 2026 is 24 years, 7 months, 13 days.” Age and name restored correctly, but a trailing full stop included in the PERSON span yielded awkward punctuation. Date type accuracy and entity punctuation boundaries remain quality gaps.
+- Copy restored text failed visibly in the live embedded frame. The iframe only delegated `language-model`; 0.9.1 adds write-only `clipboard-write` delegation. Native clipboard success still requires retesting. No clipboard-read permission was added.
+
+This is a narrow synthetic acceptance test, not all-provider or arbitrary private-calculation coverage.
+
+## 0.9.2 clipboard fallback follow-up — October 31
+
+Delegating clipboard-write alone did not resolve live Claude's denied async clipboard access: Copy reviewed text still showed its selection fallback. Added an explicit-click copy-command fallback within the extension-owned document; temporary text nodes are removed and focus/selection restored. No private text is placed in the host page and no clipboard-read permission is requested by the extension.
+
+A fresh masked synthetic greeting was submitted in the same test conversation. Its newly created private response frame loaded the updated script from the unpacked extension and displayed “Hello Nora Vale, it’s great to connect with you at nora.test@example.org.” Clicking Copy restored text reported “Copied.” The installed extension manifest had last been reloaded as 0.9.1; these new frame resources contained the 0.9.2 fallback. A later native paste attempt did not expose a pasted value in accessibility output and screen capture returned blank, so the live clipboard round trip is INCONCLUSIVE, not a full pass.
+
+The isolated Chromium regression independently used the real copy command and read back exactly “Hello Nora Vale.” from its clipboard. Separate mocked cases verify the async fallback, denial feedback, unresolved-map exclusion and temporary-node cleanup. The full JavaScript and installed-extension fixture suites passed with the fallback implementation; only the clipboard regression was expanded afterward and rerun successfully.

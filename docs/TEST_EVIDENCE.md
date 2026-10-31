@@ -64,3 +64,11 @@ Verified in the authoritative local checkout on `codex/incognix-release`:
 - No external requests were observed from the tested workspace and redactor pages. This is not a whole-browser network/privacy audit.
 
 The new age/cancel/copy features still need signed-in acceptance after reloading version 0.9.0. Remote CI has not been checked for this revision. See RELEASE_READINESS.md for explicit pending features and final-release gates.
+
+## 0.9.1 clipboard follow-up
+
+The signed-in Claude test passed actual cancellation/retry, masked send and local age restoration, but exposed denied clipboard writes in the embedded response frame. Added `clipboard-write` to the private iframe's delegated capabilities (no clipboard-read or new manifest permission). Updated the capability contract. Syntax checks, all JavaScript suites, the full browser suite, pinned asset verification and ZIP integrity checks passed again. Native clipboard acceptance is recorded separately in LIVE_TEST_CHECKPOINT.md.
+
+## 0.9.2 clipboard fallback — October 31
+
+Write-only iframe delegation did not fix the signed-in host's async clipboard denial. Added a user-click copy-command path entirely in the private frame, retaining the async path and visible failure feedback. Syntax checks, the JavaScript suites and the installed-extension browser suite passed. The expanded clipboard regression also passed a real isolated Chromium clipboard readback with exact text equality. It requests clipboard-read only in the isolated test context, never in the extension. Signed-in Claude reported Copied, but native paste verification was inconclusive; see LIVE_TEST_CHECKPOINT.md.

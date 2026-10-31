@@ -27,6 +27,23 @@ const message=async p=>{
   if(res?.ok===false)throw Error(res.error||'Local protection unavailable');
   return res;
 };
+// Copy only on an explicit user click, entirely inside the extension document.
+// Some hosts prohibit the async Clipboard API even with iframe delegation.
+async function copyPrivateText(text){
+  const focused=document.activeElement;
+  const selection=window.getSelection();
+  const ranges=selection?Array.from({length:selection.rangeCount},(_,i)=>selection.getRangeAt(i).cloneRange()):[];
+  const field=document.createElement('textarea');
+  field.value=text;field.readOnly=true;field.setAttribute('aria-hidden','true');
+  field.style.cssText='position:fixed;left:-10000px;top:0;opacity:0';
+  document.body.append(field);
+  let copied=false;
+  try{field.select();copied=document.execCommand('copy');}catch{}finally{
+    field.remove();focused?.focus({preventScroll:true});
+    if(selection){selection.removeAllRanges();for(const range of ranges)selection.addRange(range);}
+  }
+  if(!copied)await navigator.clipboard.writeText(text);
+}
 let responseReady=false;
 let lastResize=-1;
 let lastResizeReady=null;
@@ -232,7 +249,7 @@ async function initComposer(){
   $('preview-cancel').addEventListener('click',()=>{if(busy)return;previewId=null;current=null;$('preview').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});resize();});
   $('copy-reviewed').addEventListener('click',async()=>{
     if(busy||!current||!previewId||$('preview').hidden)return;
-    try{await navigator.clipboard.writeText($('outgoing').value);status('Reviewed text copied. Paste it into the chatbot; nothing was sent automatically.');}
+    try{await copyPrivateText($('outgoing').value);status('Reviewed text copied. Paste it into the chatbot; nothing was sent automatically.');}
     catch{status('Clipboard unavailable. Select and copy the reviewed text above.',true);$('outgoing').focus();$('outgoing').select();}
   });
   $('confirm-send').addEventListener('click',async()=>{
@@ -317,7 +334,7 @@ function syncResponseToggle(){
 }
 async function initResponse(){
   let restoredCopy='';
-  $('copy-restored').addEventListener('click',async()=>{if(!responseReady)return;try{await navigator.clipboard.writeText(restoredCopy);$('copy-status').textContent='Copied';}catch{$('copy-status').textContent='Copy unavailable. Select the restored text to copy it.';}});
+  $('copy-restored').addEventListener('click',async()=>{if(!responseReady)return;try{await copyPrivateText(restoredCopy);$('copy-status').textContent='Copied';}catch{$('copy-status').textContent='Copy unavailable. Select the restored text to copy it.';}});
   $('response').hidden=false;
   // Never add extension commentary or a shield heading to the assistant answer.
   $('response-label').hidden=true;

@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {chromium}=require('playwright');
+assert(fs.readFileSync(path.join(__dirname,'../extension/content/content.js'),'utf8').includes("f.allow='language-model; clipboard-write'"),'embedded copy needs write-only clipboard delegation');
 (async()=>{
  const browser=await chromium.launch({headless:true});
  try{
@@ -10,7 +11,9 @@ const {chromium}=require('playwright');
   await page.route('https://fixture.invalid/**',r=>r.fulfill({contentType:'text/html',body:html}));
   await page.goto('https://fixture.invalid/?mode=response&messageId=test');
   await page.evaluate(()=>{
-   window.result={text:'Hello Nora Vale.',unresolved:false};window.copied=[];window.denyCopy=false;
+   window.result={text:'Hello Nora Vale.',unresolved:false};window.copied=[];window.denyCopy=false;window.legacyCopy=false;
+   window.realExecCommand=document.execCommand.bind(document);window.realClipboard=navigator.clipboard;
+   document.execCommand=command=>{if(!window.legacyCopy)return false;if(command==='copy')window.copied.push(document.activeElement.value);return true;};
    window.chrome={runtime:{sendMessage:async p=>p.type==='RESTORE_MESSAGE'?window.result:{ok:true}}};
    Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{if(window.denyCopy)throw Error('denied');window.copied.push(text);}}});
   });
@@ -21,10 +24,20 @@ const {chromium}=require('playwright');
   await page.evaluate(()=>{window.denyCopy=true;});
   await page.locator('#copy-restored').click();
   assert.match(await page.locator('#copy-status').textContent(),/Copy unavailable/);
+  await page.evaluate(()=>{window.legacyCopy=true;});
+  await page.locator('#copy-restored').click();
+  assert.equal(await page.locator('#copy-status').textContent(),'Copied');
+  assert.deepEqual(await page.evaluate(()=>window.copied),['Hello Nora Vale.','Hello Nora Vale.']);
+  assert.equal(await page.locator('textarea[aria-hidden=true]').count(),0);
+  await page.context().grantPermissions(['clipboard-read'],{origin:'https://fixture.invalid'});
+  await page.evaluate(()=>{document.execCommand=window.realExecCommand;});
+  await page.locator('#copy-restored').click();
+  assert.equal(await page.evaluate(()=>window.realClipboard.readText()),'Hello Nora Vale.','real browser clipboard contains the restored text');
+  console.log('PASS real Chromium copy-command clipboard round trip');
   await page.evaluate(()=>{window.result={text:'[PRIVATE_PERSON_1_AAAAAA]',unresolved:true};window.postMessage({type:'PRIVACY_SHIELD_SOURCE_UPDATED',messageId:'test'},'*');});
   await page.locator('#copy-restored').waitFor({state:'hidden'});
   assert.equal(await page.locator('#restored-text').textContent(),'');
-  assert.equal(await page.evaluate(()=>window.copied.length),1);
+  assert.equal(await page.evaluate(()=>window.copied.length),2);
   console.log('PASS private response copy, clipboard rejection and unresolved mapping exclusion (mocked bridge/clipboard)');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
