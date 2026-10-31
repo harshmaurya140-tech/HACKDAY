@@ -93,13 +93,19 @@
   data.findSend=(scope)=>{
     if(!scope?.querySelectorAll)return null;
     const buttons=[...scope.querySelectorAll('button,[role="button"],input[type="submit"]')].filter(button=>{
-      if(button.disabled||button.getAttribute('aria-disabled')==='true')return false;
+      if(button.disabled||button.getAttribute('aria-disabled')==='true'||button.classList.contains('ds-button--disabled'))return false;
       const label=[button.getAttribute('aria-label'),button.getAttribute('title'),button.getAttribute('data-testid')].filter(Boolean).join(' ');
       if(/stop|abort|cancel|record|microphone|voice|dictate/i.test(label)||button.hasAttribute('aria-pressed'))return false;
       const known=data.send.some(selector=>button.matches(selector));
       const named=/^(send|send message|send prompt|ask|submit)$/i.test((button.getAttribute('aria-label')||button.getAttribute('title')||button.value||button.textContent||'').trim());
       const deepseek=location.hostname==='deepseek.com'&&button.matches('button.ds-hero-send-btn')&&Boolean(button.closest('.ds-input-wrapper')?.querySelector('textarea.hero-input'));
-      return (known||named||deepseek)&&button.getClientRects().length>0&&getComputedStyle(button).visibility!=='hidden';
+      // Observed chat.deepseek.com arrow control: no accessible name or native button.
+      // Scope to its editor and arrow glyph so a streaming Stop control is never clicked.
+      const deepseekChat=location.hostname==='chat.deepseek.com'&&
+        Boolean(scope.querySelector('textarea[placeholder="Message DeepSeek"]'))&&
+        button.matches('[role="button"].ds-button--primary.ds-button--circle')&&
+        [...button.querySelectorAll('svg path')].some(path=>(path.getAttribute('d')||'').startsWith('M8.3125 0.980206'));
+      return (known||named||deepseek||deepseekChat)&&button.getClientRects().length>0&&getComputedStyle(button).visibility!=='hidden';
     });
     return buttons.length===1?buttons[0]:null;
   };

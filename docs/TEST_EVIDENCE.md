@@ -72,3 +72,11 @@ The signed-in Claude test passed actual cancellation/retry, masked send and loca
 ## 0.9.2 clipboard fallback — October 31
 
 Write-only iframe delegation did not fix the signed-in host's async clipboard denial. Added a user-click copy-command path entirely in the private frame, retaining the async path and visible failure feedback. Syntax checks, the JavaScript suites and the installed-extension browser suite passed. The expanded clipboard regression also passed a real isolated Chromium clipboard readback with exact text equality. It requests clipboard-read only in the isolated test context, never in the extension. Signed-in Claude reported Copied, but native paste verification was inconclusive; see LIVE_TEST_CHECKPOINT.md.
+
+## 0.9.3 DeepSeek chat control — October 31
+
+Inspected the live signed-in `chat.deepseek.com` DOM without submitting the user's pending draft. Unlike the `deepseek.com/en/` landing control, the chat app uses an unlabelled `div[role=button]` with semantic `ds-button--primary ds-button--circle` classes and an arrow SVG. Disabled state uses `ds-button--disabled`, not native disabled or aria-disabled. The hidden native composer scope contains this control.
+
+Added an origin- and editor-scoped match requiring the observed arrow glyph, and excluded the CSS-disabled state. Tests reproduce the unlabelled control, reject disabled and stop-glyph states, and retain ambiguous-control rejection. Updated the error to describe an unidentified enabled button without incorrectly directing full-chat users to the full chat app.
+
+Syntax, JavaScript suites, installed-extension browser suite and pinned model/OCR asset verification passed. The DeepSeek regression uses observed DOM fixtures; a live end-to-end send is pending extension reload. This does not establish DeepSeek reply restoration or universal website support.

@@ -346,7 +346,7 @@
         // stale invisible textbox blocking the next protected send.
         if(nativeDraft.owns(input,bridge,currentValue(input)))updateTextInput(input,'');
         nativeDraft.reset();
-        throw Error('Site send control unavailable. Your private draft is retained. Copy reviewed text into the full chat app, or try again after the page finishes loading.');
+        throw Error('Incognix could not identify an enabled Send button on this page. Your private draft is retained. Retry after loading, or copy the reviewed text.');
       }
       // Only call success when the native editor clears or a new user message
       // appears. We never blindly send the same prompt twice on a timeout.

@@ -40,7 +40,7 @@ function setup({native='unrelated',buttonDisabled=false,accepted=true}={}){
   b.context.adapter.query=()=>({disabled:false,getAttribute(){return null},click(){b.input.value=''}});
   assert.equal((await b.sendSanitized('Revised protected prompt')).ok,true,'retry can replace extension-owned staged content');
   const c=setup({native:'',buttonDisabled:true});
-  await assert.rejects(c.sendSanitized('Staged prompt'),/send control unavailable/);
+  await assert.rejects(c.sendSanitized('Staged prompt'),/could not identify an enabled Send button/);
   assert.equal(c.input.value,'','unsent injected value removed if site has no send control');
   const limited=setup({native:''});
   limited.input.hasAttribute=n=>n==='maxlength';limited.input.getAttribute=()=> '800';

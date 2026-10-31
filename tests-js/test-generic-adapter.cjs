@@ -23,5 +23,12 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await p.route('https://deepseek.com/**',r=>r.fulfill({contentType:'text/html',body:'<div class="ds-input-wrapper"><textarea class="hero-input" maxlength="800" placeholder="Ask anything"></textarea><button aria-pressed="true" aria-label="Search"></button><button class="ds-hero-send-btn">↑</button></div>'}));
  await p.goto('https://deepseek.com/en/');await p.addScriptTag({path:path.resolve('extension/content/adapters.js')});
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('.ds-input-wrapper'))?.className),'ds-hero-send-btn');
+ await p.route('https://chat.deepseek.com/**',r=>r.fulfill({contentType:'text/html',body:'<section><div><textarea placeholder="Message DeepSeek"></textarea></div><div role="button" class="ds-button">Attach</div><div role="button" class="ds-button ds-button--primary ds-button--circle"><svg><path d="M8.3125 0.980206C8.66767 1.05312"></path></svg></div></section>'}));
+ await p.goto('https://chat.deepseek.com/');await p.addScriptTag({path:path.resolve('extension/content/adapters.js')});
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))?.classList.contains('ds-button--primary')),true,'observed unlabelled chat arrow recognized');
+ await p.evaluate(()=>document.querySelector('.ds-button--primary').classList.add('ds-button--disabled'));
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))),null,'CSS disabled state prevents send');
+ await p.evaluate(()=>{document.querySelector('.ds-button--primary').classList.remove('ds-button--disabled');document.querySelector('path').setAttribute('d','M0 0H16V16H0Z');});
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))),null,'stop glyph cannot be treated as send');
  console.log('PASS optional-site adapter selects unique chat input and rejects unrelated/ambiguous forms');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
