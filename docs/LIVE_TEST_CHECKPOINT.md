@@ -85,3 +85,25 @@ Delegating clipboard-write alone did not resolve live Claude's denied async clip
 A fresh masked synthetic greeting was submitted in the same test conversation. Its newly created private response frame loaded the updated script from the unpacked extension and displayed “Hello Nora Vale, it’s great to connect with you at nora.test@example.org.” Clicking Copy restored text reported “Copied.” The installed extension manifest had last been reloaded as 0.9.1; these new frame resources contained the 0.9.2 fallback. A later native paste attempt did not expose a pasted value in accessibility output and screen capture returned blank, so the live clipboard round trip is INCONCLUSIVE, not a full pass.
 
 The isolated Chromium regression independently used the real copy command and read back exactly “Hello Nora Vale.” from its clipboard. Separate mocked cases verify the async fallback, denial feedback, unresolved-map exclusion and temporary-node cleanup. The full JavaScript and installed-extension fixture suites passed with the fallback implementation; only the clipboard regression was expanded afterward and rerun successfully.
+
+## 0.9.3 signed-in DeepSeek send test and 0.9.4 follow-up
+
+After the user confirmed reloading 0.9.3, opened a separate DeepSeek tab. The popup offered Enable on this site; reactivated the already-authorized integration without an additional Chrome permission prompt.
+
+Entered the synthetic prompt: “Synthetic privacy test. Write one short greeting for Nora Vale at nora.test@example.org. Preserve every placeholder token exactly as written.” Real local analysis produced PERSON and EMAIL placeholders. Inspected the exact outgoing preview and clicked Send reviewed text. DeepSeek accepted it and created https://chat.deepseek.com/a/chat/s/8bc80ee5-0a9d-4d5f-95bf-52267f639b7e . The provider reply retained both placeholders. This verifies the unlabelled Send control fix on the live chat app.
+
+Restoration failed: the composer bridge changed from 3693c3fa-e107-4a00-8532-1b588fd697b9 to a75927d2-69fa-483d-87a7-a4148a9f78a7 on first-send navigation. Live DOM inspection also found `.ds-assistant-message-main-content` for the actual answer, `.ds-think-content .ds-markdown` for thinking, and `.ds-message .ds-collapsible-text` for the user prompt. Generic selectors missed these bodies.
+
+0.9.4 recognizes DeepSeek root as a new conversation and its established conversation UUID in both content navigation and background indexing. It preserves a locally initiated first-send mapping, supports same-tab refresh reattachment, and keeps subsequent new chats isolated. Optional-site authorization remains required. It selects the observed user/answer bodies, excluding thinking. Automated regression coverage is recorded in TEST_EVIDENCE.md; signed-in restoration acceptance requires the 0.9.4 reload and fresh submission. Existing lost mappings cannot be reconstructed from provider placeholders.
+
+## 0.9.4 signed-in DeepSeek acceptance — November 1
+
+Chrome displayed version 0.9.4; enabled the extension and activated the already-authorized DeepSeek integration. Used a fresh synthetic conversation, not the user's private draft. Actual local analysis of the Nora Vale / nora.test@example.org greeting produced PERSON and EMAIL tokens. Inspected the exact outgoing preview and explicitly clicked Send reviewed text.
+
+Conversation: https://chat.deepseek.com/a/chat/s/2c5aa8f0-3f3d-412b-a76d-a67d59ae2b3d .
+
+The provider received `[PRIVATE_PERSON_1_058CED]` and `[PRIVATE_EMAIL_1_44BD10]` and preserved them in its reply. The original bridge aadf145d-3ea9-42b4-9281-9031e4acde33 survived first-send navigation. Private frames restored the original user prompt and the answer: “Hi Nora Vale, I hope this greeting reaches you at nora.test@example.org.” Thinking content remained masked and was excluded from the restored answer.
+
+A normal page refresh created bridge cfa02141-f4de-4018-84ba-ad900079ff2c and reattached the session. After loading, both private frames again displayed the original synthetic name and email.
+
+PASS: actual local analysis, reviewed masked send, first-send session preservation, user/answer restoration, and same-tab refresh restoration. This narrow text smoke test does not establish attachment acceptance, clipboard round trip, all DeepSeek controls, or universal site compatibility.

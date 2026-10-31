@@ -9,6 +9,7 @@ let handler,onRemoved,sendFails=true,tabURL='https://claude.ai/new';
 const bridge1='00000000-0000-4000-8000-000000000011';
 const bridge2='00000000-0000-4000-8000-000000000022';
 const chrome={
+  permissions:{contains:async({origins})=>origins.every(o=>o==='https://chat.deepseek.com/*')},
   runtime:{getURL:p=>'chrome-extension://id/'+String(p).replace(/^\//,''),onMessage:{addListener:h=>handler=h}},
   storage:{session:{
     async get(keys){if(keys===null)return Object.fromEntries(store);return Object.fromEntries((Array.isArray(keys)?keys:[keys]).map(k=>[k,store.get(k)]));},
@@ -53,5 +54,20 @@ const call=(type,bridge,data={})=>new Promise(resolve=>handler({type,bridge,...d
  assert.equal(Object.keys(store.get('ps-session:'+fresh.sessionId).dummyToReal).length,1);
  await onRemoved(8);
  assert(![...store.keys()].some(k=>k.startsWith('ps-')),'closing tab destroys all related mappings');
+ tabURL='https://chat.deepseek.com/';
+ assert.equal((await register(bridge1)).ok,true);
+ assert(![...store.keys()].some(k=>k.startsWith('ps-conversation:')),'DeepSeek new chat must not reuse a previous root mapping');
+ const deepSession=store.get('ps-bridge:'+bridge1).sessionId;
+ tabURL='https://chat.deepseek.com/a/chat/s/8bc80ee5-0a9d-4d5f-95bf-52267f639b7e';
+ assert.equal((await new Promise(resolve=>handler({type:'REGISTER_TAB',bridge:bridge1},{tab:{id:8},url:'https://chat.deepseek.com/'},resolve))).ok,true);
+ assert.equal(store.get('ps-conversation:8:deepseek:8bc80ee5-0a9d-4d5f-95bf-52267f639b7e'),deepSession);
+ assert.equal((await register(bridge2)).ok,true);
+ assert.equal(store.get('ps-bridge:'+bridge2).sessionId,deepSession,'DeepSeek reload reattaches the same private session');
+ tabURL='https://chat.deepseek.com/';
+ const bridge3='00000000-0000-4000-8000-000000000033';
+ assert.equal((await register(bridge3)).ok,true);
+ assert.notEqual(store.get('ps-bridge:'+bridge3).sessionId,deepSession,'new DeepSeek chat stays isolated');
+ await onRemoved(8);
+ assert.equal(store.size,0);
  console.log('PASS: draft retry on adapter failure, same-tab conversation reattachment and secure tab cleanup');
 })().catch(e=>{console.error(e);process.exitCode=1});

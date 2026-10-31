@@ -80,3 +80,11 @@ Inspected the live signed-in `chat.deepseek.com` DOM without submitting the user
 Added an origin- and editor-scoped match requiring the observed arrow glyph, and excluded the CSS-disabled state. Tests reproduce the unlabelled control, reject disabled and stop-glyph states, and retain ambiguous-control rejection. Updated the error to describe an unidentified enabled button without incorrectly directing full-chat users to the full chat app.
 
 Syntax, JavaScript suites, installed-extension browser suite and pinned model/OCR asset verification passed. The DeepSeek regression uses observed DOM fixtures; a live end-to-end send is pending extension reload. This does not establish DeepSeek reply restoration or universal website support.
+
+## 0.9.4 DeepSeek restoration follow-up — November 1
+
+Added DeepSeek first-send navigation, unrelated-chat isolation, revisit and query-stability coverage. Background integration tests verify root is not indexed as an established chat, live URL registration after navigation uses the same session, refresh reattaches it, and a new chat gets an isolated session. Observed-DOM tests select only the main answer and user text, excluding the thinking panel. Syntax and JavaScript suites passed. Live 0.9.3 masked submission passed but restoration failed; 0.9.4 live restoration remains pending.
+
+The full installed-extension browser suite also passed for this revision: real bundled NER/OCR and document processing, plus ChatGPT/Claude/Gemini fixtures with mocked contextual semantic inference. Those fixtures do not substitute for a live DeepSeek restoration check.
+
+Signed-in 0.9.4 DeepSeek acceptance subsequently PASSED on November 1: actual local analysis, inspected masked preview, explicit reviewed send, retained first-send session, user/answer restoration and restoration after a normal page refresh. The fresh synthetic conversation and observed bridge transitions are recorded in LIVE_TEST_CHECKPOINT.md. This closes the narrow live restoration check above; broader provider and attachment acceptance gates remain open.

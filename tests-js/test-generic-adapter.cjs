@@ -30,5 +30,8 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))),null,'CSS disabled state prevents send');
  await p.evaluate(()=>{document.querySelector('.ds-button--primary').classList.remove('ds-button--disabled');document.querySelector('path').setAttribute('d','M0 0H16V16H0Z');});
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))),null,'stop glyph cannot be treated as send');
+ await p.evaluate(()=>document.body.insertAdjacentHTML('beforeend','<div class="ds-think-content"><div class="ds-markdown">Thinking</div></div><div class="ds-message"><div class="ds-assistant-message-main-content">Answer</div></div><div class="ds-message"><div class="ds-collapsible-text">Prompt</div></div>'));
+ assert.deepEqual(await p.evaluate(()=>window.__privacyShieldAdapter.queryAll(window.__privacyShieldAdapter.assistant).map(e=>e.textContent)),['Answer']);
+ assert.deepEqual(await p.evaluate(()=>window.__privacyShieldAdapter.queryAll(window.__privacyShieldAdapter.user).map(e=>e.textContent)),['Prompt']);
  console.log('PASS optional-site adapter selects unique chat input and rejects unrelated/ambiguous forms');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

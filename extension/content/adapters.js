@@ -70,6 +70,12 @@
     user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]']
   };
   if(!data) return;
+  if(location.hostname==='chat.deepseek.com'){
+    // Keep optional-site authorization, but use observed message bodies rather
+    // than generic markdown (which would include the model's thinking panel).
+    data.assistant=['.ds-assistant-message-main-content'];
+    data.user=['.ds-message .ds-collapsible-text'];
+  }
   data.query=(list,root=document)=>{
     for(const selector of list){try{const found=root.querySelector(selector);if(found)return found;}catch{}}
     return null;

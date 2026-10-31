@@ -2,7 +2,12 @@
 // Runs in Chrome's isolated content-script context. No private data stored here.
 (function (root) {
   function conversationKey(rawUrl, site) {
-    const path = new URL(rawUrl).pathname;
+    const url = new URL(rawUrl), path = url.pathname;
+    if(site==='generic'&&url.hostname==='chat.deepseek.com'){
+      const match=path.match(/^\/a\/chat\/s\/([a-f0-9-]{36})\/?$/i);
+      if(match)return 'deepseek:'+match[1];
+      if(path==='/')return 'new';
+    }
     if (site === 'chatgpt') {
       const match = path.match(/^\/c\/([^/]+)/);
       return match ? `chatgpt:${match[1]}` : 'new';

@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const {conversationKey,createSessionNavigation}=require('../extension/content/session-navigation.js');
 const sites=[
+ ['generic','https://chat.deepseek.com/','https://chat.deepseek.com/a/chat/s/8bc80ee5-0a9d-4d5f-95bf-52267f639b7e','https://chat.deepseek.com/a/chat/s/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'],
  ['claude','https://claude.ai/new','https://claude.ai/chat/489cb58c-7137-4f88-b6c0-99687507b28b','https://claude.ai/chat/a-different-chat'],
  ['chatgpt','https://chatgpt.com/','https://chatgpt.com/c/12345','https://chatgpt.com/c/other-chat'],
  ['gemini','https://gemini.google.com/app','https://gemini.google.com/app/abc123','https://gemini.google.com/app/def456']

@@ -19,6 +19,11 @@ function conversationKey(url){
     if(u.hostname==='gemini.google.com'){
       const m=path.match(/^\/app\/([^/]+)/);return m?'gemini:'+m[1]:null;
     }
+    if(u.hostname==='chat.deepseek.com'){
+      const m=path.match(/^\/a\/chat\/s\/([a-f0-9-]{36})\/?$/i);
+      if(m)return 'deepseek:'+m[1];
+      if(path==='/')return null;
+    }
     if(!allowedHosts.has(u.hostname))return u.origin+u.pathname+u.search+u.hash;
   }catch{}
   return null;
