@@ -14,7 +14,7 @@
 | Visual redaction | PDF/PNG/JPEG rendering, manual regions, English OCR suggestions, new raster PDF | 8 MB; PDF 10 pages / 20M pixels; image 16MP; manual page review required |
 | Native attachments/voice | Best-effort controls blocked while ON | Not a network firewall; arbitrary native tools and routes cannot be guaranteed blocked |
 | Local exact age | Private calendar calculation and result token restoration | One self-labelled DOB and explicit age-as-of date; ISO or full English month date only; not general arithmetic |
-| Analysis cancellation / private copy | Retain draft on cancellation; copy restored answers in private frame | Cancellation passed signed-in Claude; copy passed isolated Chromium readback. Live Claude copy reported success but native paste verification remains inconclusive |
+| Analysis cancellation / private copy | Retain draft on cancellation; copy restored answers in private frame | Cancellation passed signed-in Claude; copy passed isolated Chromium readback and signed-in Claude copy/paste on 0.9.6. Other hosts remain unverified |
 | Voice / DOCX | No protection pipeline | Not supported |
 
 Text-PDF extraction does not redact the original PDF. Raster export replaces selected pixels in a new image-only PDF and excludes original text layers, attachments and metadata. Unselected visible content remains. OCR can miss handwriting, unusual fonts, small text and non-English content; faces, signatures and logos need manual selection. Raster export loses selectable text and accessibility. Automated checks are not an independent redaction security audit.

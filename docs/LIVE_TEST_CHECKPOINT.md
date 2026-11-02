@@ -107,3 +107,13 @@ The provider received `[PRIVATE_PERSON_1_058CED]` and `[PRIVATE_EMAIL_1_44BD10]`
 A normal page refresh created bridge cfa02141-f4de-4018-84ba-ad900079ff2c and reattached the session. After loading, both private frames again displayed the original synthetic name and email.
 
 PASS: actual local analysis, reviewed masked send, first-send session preservation, user/answer restoration, and same-tab refresh restoration. This narrow text smoke test does not establish attachment acceptance, clipboard round trip, all DeepSeek controls, or universal site compatibility.
+
+## 0.9.6 signed-in Claude clipboard round trip — November 2
+
+Chrome Extensions UI confirmed Incognix 0.9.6 enabled. Recorded two existing clipboard policy error entries associated with the older b9ac3171-4528-4c31-8dbd-0d1b6816de22 conversation; did not clear them. Opened a fresh Claude tab and entered only the synthetic Nora Vale / nora.test@example.org greeting. Actual local analysis produced PERSON and EMAIL placeholders. Copy reviewed text reported success. Inspected the masked preview and explicitly sent it.
+
+Conversation: https://claude.ai/chat/4808be29-e42f-4a87-a265-4aa37240efdb .
+
+The prompt and answer restored in private frames while retaining bridge e0263521-a0f6-4aef-b1ff-d693f689c01b. Copy restored text reported Copied. Pasted using the native keyboard shortcut into the empty Incognix private composer; accessibility output showed the actual answer with Nora Vale and nora.test@example.org, matching the restored answer. Removed that synthetic pasted draft without sending it. This verifies the real clipboard round trip, not only the success label.
+
+Revisited and refreshed Chrome's extension error log: the same two old entries remained, with no new entry for the fresh conversation. PASS for this signed-in copy flow. No claim about every host or forced-denial path in signed-in Chrome. A separate display defect was observed: a trailing private-use glyph U+E056 remained after “Best regards” in the restored answer and its copied text; follow-up formatting work is needed.

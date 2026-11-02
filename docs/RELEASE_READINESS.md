@@ -24,7 +24,7 @@ Status: development prerelease. Do not label this build universally compatible o
 | Voice/video | Not implemented | Local-only transcription, microphone consent, bounded models, cancellation, multimodal privacy tests; never silently use cloud speech |
 | Multiple attachments | One at a time | Per-file queues, aggregate memory limits, removal/review state, cancellation and privacy tests |
 | Private calculations | Narrow age helper | General deterministic task operations, explicit scope and provenance; do not replace arbitrary model answers with guessed results |
-| Copy controls | Reviewed-copy and private-response copy implemented | 0.9.2 private copy fallback passes real isolated clipboard round trip; live Claude reports Copied but native paste verification is inconclusive. Streaming tests remain |
+| Copy controls | Reviewed-copy and private-response copy implemented | 0.9.6 passes isolated clipboard/policy tests and signed-in Claude copy/paste round trip. Other hosts and streaming tests remain; Claude trailing private-use glyph needs formatting follow-up |
 | Recovery | Draft preservation and explicit failures | Crash, browser restart, extension upgrade and model download interruption matrix |
 | Accessibility | Focus styles and responsive controls | Keyboard-only and screen-reader acceptance across supported providers |
 | Distribution | Reproducible ZIPs and pinned assets | Clean-install checks on supported Chrome/hardware, remote CI green, store policy/privacy disclosures, licensing review |
