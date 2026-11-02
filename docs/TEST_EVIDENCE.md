@@ -104,3 +104,11 @@ The screenshot shows a Clipboard API policy violation on the earlier Claude test
 Syntax and all JavaScript suites passed, including real Chromium clipboard readback and a new real Permissions-Policy: clipboard-write=() response-header test. With the copy command forced to fail, the async API is never called, the UI reports Copy unavailable, temporary fields are removed, and no policy violation is logged. The successful command fallback remains available under that policy. This is isolated browser verification; no fresh signed-in Claude test or full document/provider browser suite rerun is claimed for this narrowly scoped change.
 
 Signed-in 0.9.6 Claude clipboard round trip subsequently PASSED November 2: restored answer copied and pasted back into the private composer with exact visible name/email and answer text. After refreshing the error log, only the two pre-existing entries remained. See LIVE_TEST_CHECKPOINT.md for the synthetic conversation and separate trailing-glyph defect.
+
+## 0.9.7 Claude footer icon cleanup — November 2
+
+Read-only inspection of the signed-in synthetic Claude conversation found the stray U+E056 character inside span[data-cds="Icon"][aria-hidden="true"]. Cleanup now removes one trailing occurrence per observed hidden design-system icon, only when no prose follows that icon in the source DOM. It does not globally delete private-use Unicode or rewrite model prose.
+
+Syntax and the JavaScript suites passed; the added real Chromium DOM regression covers the observed footer, a literal identical symbol in answer text, literal plus footer, a leading icon before prose, unknown hidden spans, user text, action-like prose and placeholder preservation. The additional footer-position guard passed the targeted regression after the full JavaScript run. Signed-in post-reload display acceptance remains pending.
+
+The full installed-extension browser suite also passed for 0.9.7: real NER/OCR, PDF extraction and raster export, and ChatGPT/Claude/Gemini composer fixtures. Contextual semantic inference is mocked in provider fixtures; this is not signed-in acceptance of the updated adapter.

@@ -355,6 +355,24 @@
       }
       if(!changed)break;
     }
+    // Observed Claude design-system icons can appear without a label. Remove
+    // one trailing occurrence per actual hidden icon, never all private-use
+    // characters: those may also be legitimate answer/code content.
+    if(typeof node.querySelectorAll==='function'){
+      const icons=[...node.querySelectorAll('[data-cds="Icon"][aria-hidden="true"]')];
+      for(const icon of icons.reverse()){
+        const glyph=String(icon.textContent||'').trim();
+        if(!/^[\uE000-\uF8FF]+$/u.test(glyph))continue;
+        // Only footer icons: an icon before prose cannot justify removing a
+        // matching literal character from the end of that prose.
+        const range=node.ownerDocument?.createRange();
+        if(!range)continue;
+        range.selectNodeContents(node);range.setStartAfter(icon);
+        if(!/^[\s\uE000-\uF8FF]*$/u.test(range.toString()))continue;
+        const tail=text.trimEnd();
+        if(tail.endsWith(glyph))text=tail.slice(0,-glyph.length).trimEnd();
+      }
+    }
     return text.trim();
   };
   window.__privacyShieldAdapter=data;
