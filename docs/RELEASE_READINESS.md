@@ -14,7 +14,7 @@ Status: development prerelease. Do not label this build universally compatible o
 
 | Area | State | Required evidence or work |
 |---|---|---|
-| Text privacy | Bundled NER + Chrome contextual model + format rules | Broader adversarial, multilingual and false-negative corpus; improve date types and trailing-punctuation spans; no perfect detection claim |
+| Text privacy | Bundled NER + Chrome contextual model + format rules | Broader adversarial, multilingual and false-negative corpus; improve date types and broader entity boundaries (PERSON sentence punctuation regression fixed in 0.9.5); no perfect detection claim |
 | Local age | Implemented, deterministic unit coverage | Signed-in Claude synthetic age test passed; other providers pending. This is not arbitrary private arithmetic |
 | Website compatibility | Three primary adapters; optional generic sites; DeepSeek chat text smoke test passed November 1 | DeepSeek reviewed send, first navigation and same-tab refresh restoration verified in 0.9.4. Broader fresh signed-in matrix still needed, including edits, retries, attachments and additional providers |
 | Unknown websites | Generic detection and explicit input picker; reviewed-copy recovery | Shadow DOM, embedded cross-origin editors, unsupported rich editors and unknown reply structures need dedicated support; never claim every site works |

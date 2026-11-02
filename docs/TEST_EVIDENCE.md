@@ -88,3 +88,11 @@ Added DeepSeek first-send navigation, unrelated-chat isolation, revisit and quer
 The full installed-extension browser suite also passed for this revision: real bundled NER/OCR and document processing, plus ChatGPT/Claude/Gemini fixtures with mocked contextual semantic inference. Those fixtures do not substitute for a live DeepSeek restoration check.
 
 Signed-in 0.9.4 DeepSeek acceptance subsequently PASSED on November 1: actual local analysis, inspected masked preview, explicit reviewed send, retained first-send session, user/answer restoration and restoration after a normal page refresh. The fresh synthetic conversation and observed bridge transitions are recorded in LIVE_TEST_CHECKPOINT.md. This closes the narrow live restoration check above; broader provider and attachment acceptance gates remain open.
+
+## 0.9.5 detection boundary hardening — November 2
+
+Fixed the sentence punctuation absorbed into PERSON spans observed in the earlier Claude test. Boundary adjustment occurs only after overlap resolution and never trims credential unions. Regression cases preserve initials, Jr. suffixes, apostrophes, hyphens and accented names, and verify exact draft round trips. The Indian mobile format backup now accepts internal spaces, nonbreaking spaces and hyphens, including +91 prefixes, without joining separate lines or matching inside longer contiguous identifiers. This is not international phone validation.
+
+`npm run check`, `npm test`, and `npm run test:browser` all passed. A new actual bundled ONNX/WASM NER browser regression verifies Nora Vale is masked without its sentence period, the spaced phone is masked, and restoration exactly reproduces the original draft. Existing real OCR, PDF and raster-export checks passed, as did ChatGPT/Claude/Gemini installed-extension fixtures. Contextual semantic inference remains mocked in those provider fixtures; no new signed-in acceptance is claimed for 0.9.5.
+
+Remote CI inspection found only older failed runs at b51d5f9 (latest run 40697120379); it does not validate the current local release. Current-version remote CI remains pending.

@@ -81,7 +81,21 @@
         prior.necessary=prior.necessary||e.necessary;
       }
     }
-    return clean.map((e,i)=>({...e,id:'e'+(i+1)}));
+    return clean.map((e,i)=>{
+      // Normalize only person boundaries AFTER collision resolution. Never trim
+      // a credential union or guess offsets from normalized/decoded model text.
+      if(e.type==='PERSON'){
+        let start=e.start,end=e.end;
+        while(start<end && /[\s"“(\[]/u.test(text[start]))start++;
+        while(end>start && /[\s"”,;:!?\)\]]/u.test(text[end-1]))end--;
+        // Keep initials and abbreviated suffixes (J., J.R., Jr., Sr.). Apostrophes,
+        // hyphens, accents and internal punctuation remain part of the name.
+        const tail=text.slice(start,end).match(/([\p{L}\p{M}]+)\.$/u);
+        if(tail && [...tail[1]].length>1 && !/^(?:jr|sr)$/i.test(tail[1]))end--;
+        if(start<end){e.start=start;e.end=end;e.text=text.slice(start,end);}
+      }
+      return {...e,id:'e'+(i+1)};
+    });
   }
   // Pure format checks complement model extraction. They are generic validators,
   // never hardcoded individuals, PANs, user prompts, or sensitive values.
@@ -91,7 +105,7 @@
       {type:'EMAIL',rx:/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi},
       {type:'PAN',rx:/\b[A-Z]{5}[0-9]{4}[A-Z]\b/g},
       // Candidate Indian mobile numbers: include international prefix when present.
-      {type:'PHONE',rx:/(?<!\w)(?:\+91[ -]?|0)?[6-9]\d{9}(?!\w)/g},
+      {type:'PHONE',rx:/(?<![\p{L}\p{N}_+])(?:\+91[ \u00a0-]?|0)?[6-9](?:[ \u00a0-]?\d){9}(?![\p{L}\p{N}_])/gu},
       {type:'AADHAAR',rx:/(?<!\w)[2-9]\d{3}[ -]?\d{4}[ -]?\d{4}(?!\w)/g},
       {type:'IP',rx:/\b(?:\d{1,3}\.){3}\d{1,3}\b/g}
     ];

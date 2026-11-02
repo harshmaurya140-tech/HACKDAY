@@ -4,6 +4,7 @@
 |---|---|---|
 | ChatGPT / Claude / Gemini | Private iframe, adaptive styling, ON/OFF, preview, confirmed send, response restoration | Isolated fixtures verified; signed-in basic masked sends passed on all three, restoration passed all three; ChatGPT/Gemini display fixes passed live retest |
 | Other HTTPS chatbots | Optional per-site/all-HTTPS activation, input picker, generic labelled-input adapter, preview/send and supported response selectors; manual fallback | Automatic detection requires a unique labelled input; manual picking helps with unlabelled inputs. shadow DOM, embedded frames, custom editors and unknown response markup may be unsupported. No all-sites guarantee |
+| DeepSeek chat | Reviewed text send, prompt/answer restoration, same-tab refresh | Signed-in synthetic text smoke test passed on 0.9.4, November 1; broader controls and attachment acceptance pending |
 | AI | Real bundled quantized BERT, Chrome local contextual analysis | BERT is English-oriented and fallible; semantic runtime availability varies |
 | Credentials | Luhn cards, IBAN checksum, SSN patterns, labeled secrets, keys, OTP/PIN/CVV and baseline checks | Pattern coverage is not exhaustive |
 | Company terms | User-maintained exact, case-sensitive terms | Not centrally enforced admin policy |
@@ -13,7 +14,7 @@
 | Visual redaction | PDF/PNG/JPEG rendering, manual regions, English OCR suggestions, new raster PDF | 8 MB; PDF 10 pages / 20M pixels; image 16MP; manual page review required |
 | Native attachments/voice | Best-effort controls blocked while ON | Not a network firewall; arbitrary native tools and routes cannot be guaranteed blocked |
 | Local exact age | Private calendar calculation and result token restoration | One self-labelled DOB and explicit age-as-of date; ISO or full English month date only; not general arithmetic |
-| Analysis cancellation / private copy | Retain draft on cancellation; copy restored answers in private frame | Clipboard availability varies; live acceptance pending |
+| Analysis cancellation / private copy | Retain draft on cancellation; copy restored answers in private frame | Cancellation passed signed-in Claude; copy passed isolated Chromium readback. Live Claude copy reported success but native paste verification remains inconclusive |
 | Voice / DOCX | No protection pipeline | Not supported |
 
 Text-PDF extraction does not redact the original PDF. Raster export replaces selected pixels in a new image-only PDF and excludes original text layers, attachments and metadata. Unselected visible content remains. OCR can miss handwriting, unusual fonts, small text and non-English content; faces, signatures and logos need manual selection. Raster export loses selectable text and accessibility. Automated checks are not an independent redaction security audit.
