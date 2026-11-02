@@ -96,3 +96,9 @@ Fixed the sentence punctuation absorbed into PERSON spans observed in the earlie
 `npm run check`, `npm test`, and `npm run test:browser` all passed. A new actual bundled ONNX/WASM NER browser regression verifies Nora Vale is masked without its sentence period, the spaced phone is masked, and restoration exactly reproduces the original draft. Existing real OCR, PDF and raster-export checks passed, as did ChatGPT/Claude/Gemini installed-extension fixtures. Contextual semantic inference remains mocked in those provider fixtures; no new signed-in acceptance is claimed for 0.9.5.
 
 Remote CI inspection found only older failed runs at b51d5f9 (latest run 40697120379); it does not validate the current local release. Current-version remote CI remains pending.
+
+## 0.9.6 clipboard policy guard — November 2
+
+The screenshot shows a Clipboard API policy violation on the earlier Claude test conversation; the screenshot alone cannot date the logged event. The current copy fallback could still invoke async writeText after the copy command failed even when the effective document policy denied clipboard-write. Added an effective-policy check before that fallback, retaining manual-copy feedback and extension-local handling. No new clipboard permissions or host-page transfer were added.
+
+Syntax and all JavaScript suites passed, including real Chromium clipboard readback and a new real Permissions-Policy: clipboard-write=() response-header test. With the copy command forced to fail, the async API is never called, the UI reports Copy unavailable, temporary fields are removed, and no policy violation is logged. The successful command fallback remains available under that policy. This is isolated browser verification; no fresh signed-in Claude test or full document/provider browser suite rerun is claimed for this narrowly scoped change.

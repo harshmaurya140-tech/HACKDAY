@@ -42,7 +42,14 @@ async function copyPrivateText(text){
     field.remove();focused?.focus({preventScroll:true});
     if(selection){selection.removeAllRanges();for(const range of ranges)selection.addRange(range);}
   }
-  if(!copied)await navigator.clipboard.writeText(text);
+  if(!copied){
+    // A denied async call logs a browser policy violation even when caught.
+    // Respect the effective embedding policy and retain manual-copy feedback.
+    const policy=document.permissionsPolicy||document.featurePolicy;
+    if(policy?.allowsFeature && !policy.allowsFeature('clipboard-write'))throw Error('Clipboard disabled by this page policy');
+    if(!navigator.clipboard?.writeText)throw Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(text);
+  }
 }
 let responseReady=false;
 let lastResize=-1;
