@@ -5,7 +5,7 @@ Status: development prerelease. Do not label this build universally compatible o
 ## Implemented in this release-hardening pass
 
 - Local calendar-age calculation for one explicit self-labelled DOB and one explicit age-as-of date (English full month names or ISO dates, 1900–2200). The derived result uses a private AGE token and is restored locally. Ambiguous dates, multiple DOBs, relative dates and invalid dates do not produce a result. Calendar month-end anniversaries clamp to the last day of the month. The provider must preserve the result token.
-- Cancel local analysis while retaining the private draft.
+- Cancel local analysis while retaining the private draft. Version 0.9.9 ignores late progress and queued cancellation after analysis hands control to review; deterministic Chromium regression coverage added.
 - Copy restored text from inside the private response frame, rather than the website's masked copy action.
 - Wrapping review controls and visible keyboard focus.
 - CI installs Chromium before JavaScript suites which launch Playwright. Remote CI success is not yet verified.

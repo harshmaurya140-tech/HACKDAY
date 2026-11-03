@@ -189,10 +189,14 @@ async function doSend(){
   try{
     status('Scanning locally…');
     analysisController=new AbortController();
-    const local=await LocalPrivacyAI.analyze(text,{onStatus:msg=>status(msg),signal:analysisController.signal});
+    const controller=analysisController;
+    const local=await LocalPrivacyAI.analyze(text,{onStatus:msg=>{
+      if(analysisController===controller&&!controller.signal.aborted&&started===revision)status(msg);
+    },signal:controller.signal});
     if(started!==revision)throw Error('Draft changed. Review it again.');
     const analysed=await message({type:'ANALYZE',text,entities:local.entities});
     if(started!==revision){await message({type:'CANCEL_DRAFT'});throw Error('Draft changed. Review it again.');}
+    analysisController=null;$('cancel-analysis').hidden=true;
     current=analysed;
     $('native-recovery').hidden=true;
     const needed=groupPermissionEntities(analysed.entities);
@@ -207,10 +211,15 @@ async function doSend(){
       await prepareAndSend({});
     }
   }catch(e){status(analysisCancelled?'Analysis cancelled. Your draft is retained.':e.message,!analysisCancelled); /* Fail closed. */}
-  finally{$('cancel-analysis').hidden=true;markBusy(false);resize();}
+  finally{analysisController=null;$('cancel-analysis').hidden=true;markBusy(false);resize();}
 }
 async function initComposer(){
-  $('cancel-analysis').addEventListener('click',()=>{analysisCancelled=true;analysisController?.abort();window.IncognixNER?.dispose();revision++;status('Analysis cancelled. Your draft is retained.');});
+  $('cancel-analysis').addEventListener('click',()=>{
+    // Ignore queued clicks once analysis has handed control to the review UI.
+    if(!busy||!analysisController||$('cancel-analysis').hidden)return;
+    analysisCancelled=true;analysisController.abort();window.IncognixNER?.dispose();revision++;
+    $('cancel-analysis').hidden=true;status('Analysis cancelled. Your draft is retained.');
+  });
   $('composer').hidden=false;
   $('composer').dataset.protection='on';
   $('draft').maxLength=12000;

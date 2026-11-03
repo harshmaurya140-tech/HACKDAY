@@ -118,3 +118,9 @@ November 3 signed-in acceptance: Chrome confirmed 0.9.7 enabled. A fresh Claude 
 ## 0.9.8 contextual classifier refinement — November 3
 
 Syntax checks, all JavaScript suites and the full installed-extension browser suite passed. The structured-detection regression checks that both initial inference and malformed-output retry contain the same ordinary-instruction/confidential-context guidance. Actual local Chrome inference on a signed-in Claude page retained an ordinary sign-off while masking name/email, then masked the same phrase when explicitly a confidential codename. No provider submission was needed. Full live observations are recorded in LIVE_TEST_CHECKPOINT.md. Browser fixtures still mock contextual inference; real NER/OCR/document checks passed independently.
+
+## 0.9.9 analysis lifecycle regression — November 4
+
+Added a real Chromium composer test with controlled asynchronous model and bridge doubles. Cancellation aborts the supplied signal, retains the draft, and rejects an eventual model result even when the model ignores abort. Late progress callbacks cannot overwrite cancellation or completed-review status. A queued Cancel click after analysis completes neither aborts the completed controller nor disposes a model nor changes the reviewed preview. No send occurs merely by producing a preview. This is deterministic UI lifecycle coverage, not live Chrome-model cancellation acceptance.
+
+Validation: syntax checks, all JavaScript suites and the complete installed-extension browser suite passed for this code change. Browser fixtures exercised real OCR/NER and document processing, with contextual inference mocked. Packaging verified pinned model/runtime/OCR assets. Signed-in acceptance of 0.9.9 remains pending reload.
