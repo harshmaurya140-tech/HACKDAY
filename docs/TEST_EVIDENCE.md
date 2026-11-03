@@ -124,3 +124,11 @@ Syntax checks, all JavaScript suites and the full installed-extension browser su
 Added a real Chromium composer test with controlled asynchronous model and bridge doubles. Cancellation aborts the supplied signal, retains the draft, and rejects an eventual model result even when the model ignores abort. Late progress callbacks cannot overwrite cancellation or completed-review status. A queued Cancel click after analysis completes neither aborts the completed controller nor disposes a model nor changes the reviewed preview. No send occurs merely by producing a preview. This is deterministic UI lifecycle coverage, not live Chrome-model cancellation acceptance.
 
 Validation: syntax checks, all JavaScript suites and the complete installed-extension browser suite passed for this code change. Browser fixtures exercised real OCR/NER and document processing, with contextual inference mocked. Packaging verified pinned model/runtime/OCR assets. Signed-in acceptance of 0.9.9 remains pending reload.
+
+## 0.9.10 labelled dates and detector evaluation — November 4
+
+Reproduced the image-heading false positive in real bundled BERT inference: SYNTHETIC was returned as OTHER independently of Chrome contextual inference. Added `npm run evaluate:ner` with eight synthetic cases, external HTTP blocked, exact original-text restoration checks, and separate detector coverage/over-masking/prepared-text measurements. See DETECTION_EVALUATION.md for scope and remaining failures.
+
+Added deterministic masking for explicitly labelled birth dates in common numeric/full-English-month forms. Regression coverage checks repeated values, exact offsets, restoration, and unchanged unrelated reference dates. No word whitelist or cloud fallback was introduced.
+
+Validation: syntax checks, all JavaScript suites and the complete installed-extension browser suite passed. Actual NER/OCR/document processing ran; contextual inference remained mocked in provider fixtures. Signed-in acceptance of 0.9.10 is pending.

@@ -1,7 +1,7 @@
 {
   "name": "incognix-release-build",
   "private": true,
-  "version": "0.9.9",
+  "version": "0.9.10",
   "scripts": {
     "prepare:model": "node scripts/download-ner.mjs && node scripts/download-ocr.mjs",
     "build:model": "node scripts/build.mjs",
@@ -11,6 +11,7 @@
     "build": "node scripts/build.mjs",
     "prepare:ner": "node scripts/download-ner.mjs",
     "verify:ner": "node scripts/verify-ner.mjs",
+    "evaluate:ner": "node tests-browser/ner-evaluation.cjs",
     "test:browser": "node tests-browser/release.cjs",
     "package": "python3 scripts/package.py",
     "check": "node scripts/check.mjs"

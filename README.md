@@ -1,4 +1,4 @@
-# Incognix 0.9.9 — development prerelease
+# Incognix 0.9.10 — development prerelease
 
 Incognix reviews sensitive text locally before you share it with an AI chatbot. It combines bundled BERT named-entity recognition, deterministic credential checks, and Chrome's on-device language model for contextual detection and necessity decisions. Users need no Python service, account, API key or separately installed model server.
 

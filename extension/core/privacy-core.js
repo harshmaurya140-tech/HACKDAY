@@ -123,6 +123,14 @@
       const start=match.index+match[0].lastIndexOf(number);
       findings.push({type:'ACCOUNT',text:number,start,end:start+number.length,necessary:false,reason:'Account identifier; hidden by default.'});
     }
+    // Explicit birth-date labels provide privacy context without classifying
+    // unrelated dates (deadlines, comparison dates) as personal identifiers.
+    // Ambiguous numeric ordering is still masked; no date is interpreted here.
+    const birthRx=/\b(?:date\s+of\s+birth|birth\s*date|d\.?o\.?b\.?)\s*(?:is\s*|[:=]\s*)?((?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}|(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?[,]?\s+\d{4}))(?![\p{L}\p{N}])/giu;
+    for(const m of text.matchAll(birthRx)){
+      const value=m[1],start=m.index+m[0].lastIndexOf(value);
+      findings.push({type:'DOB',text:value,start,end:start+value.length,necessary:false,reason:'Explicitly labelled birth date; hidden by default.'});
+    }
     const add=(type,value,start)=>findings.push({type,text:value,start,end:start+value.length,necessary:false,reason:'Structured credential; hidden by default.'});
     const luhn=digits=>{let sum=0;for(let i=digits.length-1,n=0;i>=0;i--,n++){let d=Number(digits[i]);if(n%2){d*=2;if(d>9)d-=9;}sum+=d;}return sum%10===0;};
     for(const m of text.matchAll(/(?<![\p{L}\p{N}])(?:\d[ -]?){12,18}\d(?![\p{L}\p{N}])/gu)){
