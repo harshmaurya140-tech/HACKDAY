@@ -137,3 +137,9 @@ Reloaded the existing extension; Chrome's Extensions UI subsequently confirmed 0
 Counter-test input: `Synthetic privacy test. Our unreleased project has the confidential code name Best regards. Write one sentence about this project without disclosing its confidential code name.` The preview masked the codename as `[PRIVATE_OTHER_1_CC3C63]`. Both checks used bridge ed017e23-07e0-4cc0-90a9-df43bfda64a1. Neither prompt was sent to Claude; cleared the synthetic draft afterward.
 
 PASS for these two real local-classifier examples. This is a prompt refinement, not proof that model false positives or false negatives are eliminated. Broader adversarial and repeated evaluation remains necessary.
+
+## 0.9.8 signed-in image attachment attempt — November 3
+
+Created an ignored synthetic PNG fixture at `artifacts/synthetic-ocr-contact.png` containing only a test heading, Nora Vale, and nora.test@example.org. Opened a fresh signed-in Claude page and clicked the Incognix attachment control. The macOS file picker opened, but native automation could not complete selection: the Go To Folder sheet displayed the exact existing path, while activation did not select the file and keyboard actions reset the path. Reacquiring the Chrome handle and a visible-row activation did not resolve it. The browser DOM automation could inspect the outer private iframe but did not expose its attachment control. Reloaded only the empty synthetic test page.
+
+BLOCKED at file selection, before OCR or submission. No image was submitted to Claude and this attempt is not a live attachment pass or evidence of an Incognix extraction failure. Existing isolated image/OCR regression evidence remains separate. A manual file selection or working file-chooser automation is needed to continue the signed-in acceptance test.
