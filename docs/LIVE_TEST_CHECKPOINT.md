@@ -117,3 +117,13 @@ Conversation: https://claude.ai/chat/4808be29-e42f-4a87-a265-4aa37240efdb .
 The prompt and answer restored in private frames while retaining bridge e0263521-a0f6-4aef-b1ff-d693f689c01b. Copy restored text reported Copied. Pasted using the native keyboard shortcut into the empty Incognix private composer; accessibility output showed the actual answer with Nora Vale and nora.test@example.org, matching the restored answer. Removed that synthetic pasted draft without sending it. This verifies the real clipboard round trip, not only the success label.
 
 Revisited and refreshed Chrome's extension error log: the same two old entries remained, with no new entry for the fresh conversation. PASS for this signed-in copy flow. No claim about every host or forced-denial path in signed-in Chrome. A separate display defect was observed: a trailing private-use glyph U+E056 remained after “Best regards” in the restored answer and its copied text; follow-up formatting work is needed.
+
+## 0.9.7 signed-in Claude rendering and copy — November 3
+
+Chrome Extensions confirmed 0.9.7 enabled. Opened a fresh synthetic Claude conversation and ran actual local analysis for a greeting to Nora Vale at nora.test@example.org ending with Best regards. Inspected the exact outgoing preview before explicitly sending. Name and email were masked; the model also masked Best regards as OTHER, an observed false positive that remains a detection-quality issue.
+
+Conversation: https://claude.ai/chat/4ff82f31-8849-44c7-a141-9ea82af0b888 .
+
+The initial bridge d6e1784a-1656-4c74-9ba6-2e469b5fd073 survived navigation. Both prompt and answer restored locally. The answer ended with Best regards and no stray private-use glyph. Clicked Copy restored text and pasted with the native keyboard shortcut into the empty private composer: the pasted answer matched the displayed answer, with name/email restored and no trailing glyph. Removed the unsent synthetic paste.
+
+PASS for signed-in restored rendering and actual clipboard round trip in this conversation. This does not establish universal website coverage, attachment acceptance, or perfect detection.

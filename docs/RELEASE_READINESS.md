@@ -14,7 +14,7 @@ Status: development prerelease. Do not label this build universally compatible o
 
 | Area | State | Required evidence or work |
 |---|---|---|
-| Text privacy | Bundled NER + Chrome contextual model + format rules | Broader adversarial, multilingual and false-negative corpus; improve date types and broader entity boundaries (PERSON sentence punctuation regression fixed in 0.9.5); no perfect detection claim |
+| Text privacy | Bundled NER + Chrome contextual model + format rules | Broader adversarial, multilingual and false-negative corpus; improve date types and broader entity boundaries (PERSON sentence punctuation regression fixed in 0.9.5); live November 3 test over-masked the nonsensitive sign-off Best regards; no perfect detection claim |
 | Local age | Implemented, deterministic unit coverage | Signed-in Claude synthetic age test passed; other providers pending. This is not arbitrary private arithmetic |
 | Website compatibility | Three primary adapters; optional generic sites; DeepSeek chat text smoke test passed November 1 | DeepSeek reviewed send, first navigation and same-tab refresh restoration verified in 0.9.4. Broader fresh signed-in matrix still needed, including edits, retries, attachments and additional providers |
 | Unknown websites | Generic detection and explicit input picker; reviewed-copy recovery | Shadow DOM, embedded cross-origin editors, unsupported rich editors and unknown reply structures need dedicated support; never claim every site works |
@@ -24,7 +24,7 @@ Status: development prerelease. Do not label this build universally compatible o
 | Voice/video | Not implemented | Local-only transcription, microphone consent, bounded models, cancellation, multimodal privacy tests; never silently use cloud speech |
 | Multiple attachments | One at a time | Per-file queues, aggregate memory limits, removal/review state, cancellation and privacy tests |
 | Private calculations | Narrow age helper | General deterministic task operations, explicit scope and provenance; do not replace arbitrary model answers with guessed results |
-| Copy controls | Reviewed-copy and private-response copy implemented | 0.9.6 passes isolated clipboard/policy tests and signed-in Claude copy/paste round trip. Other hosts and streaming tests remain; Claude trailing design-system glyph cleanup implemented in 0.9.7 with real DOM regression; signed-in retest pending |
+| Copy controls | Reviewed-copy and private-response copy implemented | 0.9.6 passes isolated clipboard/policy tests and signed-in Claude copy/paste round trip. Other hosts and streaming tests remain; Claude 0.9.7 restored rendering and copy/paste passed signed-in retest November 3 |
 | Recovery | Draft preservation and explicit failures | Crash, browser restart, extension upgrade and model download interruption matrix |
 | Accessibility | Focus styles and responsive controls | Keyboard-only and screen-reader acceptance across supported providers |
 | Distribution | Reproducible ZIPs and pinned assets | Clean-install checks on supported Chrome/hardware, remote CI green, store policy/privacy disclosures, licensing review |
