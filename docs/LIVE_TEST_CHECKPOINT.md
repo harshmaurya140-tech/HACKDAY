@@ -127,3 +127,13 @@ Conversation: https://claude.ai/chat/4ff82f31-8849-44c7-a141-9ea82af0b888 .
 The initial bridge d6e1784a-1656-4c74-9ba6-2e469b5fd073 survived navigation. Both prompt and answer restored locally. The answer ended with Best regards and no stray private-use glyph. Clicked Copy restored text and pasted with the native keyboard shortcut into the empty private composer: the pasted answer matched the displayed answer, with name/email restored and no trailing glyph. Removed the unsent synthetic paste.
 
 PASS for signed-in restored rendering and actual clipboard round trip in this conversation. This does not establish universal website coverage, attachment acceptance, or perfect detection.
+
+## 0.9.8 contextual sign-off counter-tests — November 3
+
+Isolated real BERT inference on the exact prior greeting returned only Nora Vale (PERSON); it did not detect Best regards. Refined Chrome's contextual detection instructions to distinguish generic output-style requests from private facts, preserving explicit secret/confidential contexts. No phrase whitelist or sensitivity bypass was added. The format retry uses the same boundary.
+
+Reloaded the existing extension; Chrome's Extensions UI subsequently confirmed 0.9.8 enabled. On a fresh signed-in Claude new-chat page, actual local analysis produced this outgoing preview: `Synthetic privacy test. Write one short greeting for [PRIVATE_PERSON_1_32DC80] at [PRIVATE_EMAIL_1_E78A67], ending with Best regards. Preserve every placeholder token exactly as written.`
+
+Counter-test input: `Synthetic privacy test. Our unreleased project has the confidential code name Best regards. Write one sentence about this project without disclosing its confidential code name.` The preview masked the codename as `[PRIVATE_OTHER_1_CC3C63]`. Both checks used bridge ed017e23-07e0-4cc0-90a9-df43bfda64a1. Neither prompt was sent to Claude; cleared the synthetic draft afterward.
+
+PASS for these two real local-classifier examples. This is a prompt refinement, not proof that model false positives or false negatives are eliminated. Broader adversarial and repeated evaluation remains necessary.

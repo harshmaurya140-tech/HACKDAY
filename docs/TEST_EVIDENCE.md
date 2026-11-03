@@ -114,3 +114,7 @@ Syntax and the JavaScript suites passed; the added real Chromium DOM regression 
 The full installed-extension browser suite also passed for 0.9.7: real NER/OCR, PDF extraction and raster export, and ChatGPT/Claude/Gemini composer fixtures. Contextual semantic inference is mocked in provider fixtures; this is not signed-in acceptance of the updated adapter.
 
 November 3 signed-in acceptance: Chrome confirmed 0.9.7 enabled. A fresh Claude synthetic greeting restored without the stray trailing glyph, and native copy/paste into the private composer matched the clean displayed answer. Actual contextual analysis ran; it also produced a false-positive OTHER detection for Best regards, recorded for follow-up. See LIVE_TEST_CHECKPOINT.md for the conversation and exact scope.
+
+## 0.9.8 contextual classifier refinement — November 3
+
+Syntax checks, all JavaScript suites and the full installed-extension browser suite passed. The structured-detection regression checks that both initial inference and malformed-output retry contain the same ordinary-instruction/confidential-context guidance. Actual local Chrome inference on a signed-in Claude page retained an ordinary sign-off while masking name/email, then masked the same phrase when explicitly a confidential codename. No provider submission was needed. Full live observations are recorded in LIVE_TEST_CHECKPOINT.md. Browser fixtures still mock contextual inference; real NER/OCR/document checks passed independently.
