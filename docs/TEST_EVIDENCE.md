@@ -136,3 +136,9 @@ Validation: syntax checks, all JavaScript suites and the complete installed-exte
 ## Remote CI acceptance — November 4
 
 [GitHub Actions run 41798951606](https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/41798951606) passed at df790ef5a70703364d1db72e586ad318e0cd429d: clean npm install, pinned model downloads, build, asset verification, syntax, JavaScript suites, installed-extension browser fixtures, detector evaluation, packaging and artifact upload. The first new run failed because ubuntu-latest selected Ubuntu 26.04, unsupported by pinned Playwright 1.56.1; pinning Ubuntu 24.04 resolved that environment failure. This verifies isolated Linux CI, not signed-in provider acceptance or production readiness.
+
+## 0.9.10 packaged ZIP and signed-in acceptance — November 4
+
+Verified ZIP CRC, safe member paths and SHA256SUMS, extracted `incognix-0.9.10-extension.zip`, then ran the complete installed-extension browser suite with INCOGNIX_EXTENSION pointing at the extracted artifact in a fresh Chromium profile. All checks passed, including actual NER/OCR/document processing and ChatGPT/Claude/Gemini fixtures. Contextual inference is mocked in those fixtures. Extension ZIP SHA-256: `e32531614e66723f92833c1539ef6df1ea598cb718492cfff7c9efa927b16e46`. Local report: `artifacts/package-smoke.json`.
+
+Separately, signed-in Chrome with 0.9.10 passed real local analysis, cancellation with draft retention, reviewed masked send, private prompt/reply restoration, native clipboard round trip and same-tab refresh on Claude using synthetic name/date data. See LIVE_TEST_CHECKPOINT.md for exact scope. No universal compatibility or final production readiness claim.

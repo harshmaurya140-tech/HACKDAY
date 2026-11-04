@@ -5,7 +5,7 @@ Status: development prerelease. Do not label this build universally compatible o
 ## Implemented in this release-hardening pass
 
 - Local calendar-age calculation for one explicit self-labelled DOB and one explicit age-as-of date (English full month names or ISO dates, 1900–2200). The derived result uses a private AGE token and is restored locally. Ambiguous dates, multiple DOBs, relative dates and invalid dates do not produce a result. Calendar month-end anniversaries clamp to the last day of the month. The provider must preserve the result token.
-- Cancel local analysis while retaining the private draft. Version 0.9.9 ignores late progress and queued cancellation after analysis hands control to review; deterministic Chromium regression coverage added.
+- Cancel local analysis while retaining the private draft. Version 0.9.9 ignores late progress and queued cancellation after analysis hands control to review; deterministic Chromium regression coverage added. Signed-in Claude cancellation/draft-retention acceptance passed in 0.9.10 on November 4.
 - Copy restored text from inside the private response frame, rather than the website's masked copy action.
 - Wrapping review controls and visible keyboard focus.
 - CI installs Chromium before JavaScript suites which launch Playwright and pins Ubuntu 24.04 for the locked Playwright version. [Remote clean-build CI passed November 4](https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/41798951606) at df790ef.
@@ -24,10 +24,10 @@ Status: development prerelease. Do not label this build universally compatible o
 | Voice/video | Not implemented | Local-only transcription, microphone consent, bounded models, cancellation, multimodal privacy tests; never silently use cloud speech |
 | Multiple attachments | One at a time | Per-file queues, aggregate memory limits, removal/review state, cancellation and privacy tests |
 | Private calculations | Narrow age helper | General deterministic task operations, explicit scope and provenance; do not replace arbitrary model answers with guessed results |
-| Copy controls | Reviewed-copy and private-response copy implemented | 0.9.6 passes isolated clipboard/policy tests and signed-in Claude copy/paste round trip. Other hosts and streaming tests remain; Claude 0.9.7 restored rendering and copy/paste passed signed-in retest November 3 |
-| Recovery | Draft preservation and explicit failures | Crash, browser restart, extension upgrade and model download interruption matrix |
+| Copy controls | Reviewed-copy and private-response copy implemented | 0.9.6 passes isolated clipboard/policy tests and signed-in Claude copy/paste round trip. 0.9.10 signed-in Claude native clipboard round trip passed November 4. Other hosts and streaming tests remain; Claude 0.9.7 restored rendering and copy/paste passed signed-in retest November 3 |
+| Recovery | Draft preservation and explicit failures | 0.9.10 Claude same-tab refresh and cancellation draft retention passed November 4. Crash, browser restart, extension upgrade and model download interruption matrix remains |
 | Accessibility | Focus styles and responsive controls | Keyboard-only and screen-reader acceptance across supported providers |
-| Distribution | Reproducible ZIPs and pinned assets | Remote CI green at df790ef; clean-install checks on supported Chrome/hardware, store policy/privacy disclosures and licensing review remain |
+| Distribution | Reproducible ZIPs and pinned assets | Remote CI green at df790ef; extracted 0.9.10 ZIP passed the complete fresh-profile browser suite. Additional clean-install checks on supported Chrome/hardware, store policy/privacy disclosures and licensing review remain |
 | Security | Isolation and consent tests | Independent review of bridge authorization, page spoofing, hostile documents and data retention |
 
 ## Shipping scope

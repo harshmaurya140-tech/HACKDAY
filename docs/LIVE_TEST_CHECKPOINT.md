@@ -151,3 +151,13 @@ The user completed file selection. Native Chrome accessibility showed local OCR 
 Reopened the resulting conversation on November 4: https://claude.ai/chat/c1a114e2-580f-44a6-b8d7-8c7e3fccdb78 . Stored provider-side text contains the reviewed placeholders. The reply reads: “Hello [PRIVATE_PERSON_1_C8DFFD], it’s nice to meet you! I’ll keep your contact at [PRIVATE_EMAIL_1_E1D530] handy for anything we need to follow up on.”
 
 PASS for this synthetic PNG's OCR, name/email masking, reviewed delivery and provider placeholder preservation. Original test tab was no longer open; a fresh native tab did not restore originals, consistent with tab-bound session indexing. Same-tab reply restoration is therefore UNVERIFIED for this image test, and reopening after closing the tab remains a product limitation. This is not a complete attachment acceptance pass, a general image-understanding test, or a network audit.
+
+## 0.9.10 signed-in Claude text acceptance — November 4
+
+Chrome Extensions confirmed 0.9.10 enabled after the user's reload. A new-chat page contained an existing user draft, which was left untouched; testing continued in the existing synthetic conversation https://claude.ai/chat/c1a114e2-580f-44a6-b8d7-8c7e3fccdb78 .
+
+Entered a synthetic request confirming Nora Vale and the birth date 15 March 2002. Cancel analysis stopped the active UI flow, retained the exact draft and sent nothing. Retrying actual local analysis produced PERSON token `[PRIVATE_PERSON_1_53D415]` and date token `[PRIVATE_OTHER_1_A3735D]`. The model classified the date as OTHER; this live test does not isolate the deterministic DOB rule. Inspected the masked preview and explicitly sent it. Both prompt and reply restored in private frames. The answer was: “Confirmed: your name is Nora Vale and your date of birth is 15 March 2002.”
+
+Copy restored text followed by native paste into the empty private composer reproduced that answer exactly. Cleared only that synthetic unsent paste. A normal same-tab refresh created a new bridge and restored both messages again. Screenshot saved locally at `artifacts/live-0.9.10-claude.png` (ignored, not published).
+
+PASS: cancellation UI/draft retention, real local analysis, reviewed masked submission, prompt/reply restoration, actual clipboard round trip and same-tab refresh. This does not prove immediate termination of GPU work, restoration after closing the tab, every provider, or the earlier image reply's same-tab restoration.
