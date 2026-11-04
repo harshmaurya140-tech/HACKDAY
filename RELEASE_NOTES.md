@@ -1,3 +1,13 @@
+# 0.9.10 development prerelease
+
+- Protect explicitly labelled birth dates in common numeric and full English-month formats; leave unlabelled reference dates to contextual analysis.
+- Guard completed reviews against late cancellation and stale model progress, retaining cancelled drafts.
+- Improve name/phone boundaries, local exact-age results, clipboard policy handling and Claude reply formatting.
+- Support observed DeepSeek send controls, first-send navigation and same-tab restoration; optional site permission is still required.
+- Add an eight-case real BERT/rules evaluation that records known misses and over-masking. SYNTHETIC heading over-masking remains unresolved.
+- Clean GitHub CI now passes on pinned Ubuntu 24.04 and produces development ZIPs. Selected live results and remaining release gates are documented in docs/TEST_EVIDENCE.md and docs/RELEASE_READINESS.md.
+- Private mappings remain tab-bound and are removed when the tab closes. Universal compatibility, Office files, voice/video and multiple attachments remain outside this prerelease's verified capabilities.
+
 ## 0.8.3 — attachment workflow and accurate status
 
 - Paste screenshots into the private draft or drop one supported file onto the composer. Replacing an attachment cancels its processing and invalidates earlier previews.

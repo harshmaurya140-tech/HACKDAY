@@ -8,7 +8,7 @@ Status: development prerelease. Do not label this build universally compatible o
 - Cancel local analysis while retaining the private draft. Version 0.9.9 ignores late progress and queued cancellation after analysis hands control to review; deterministic Chromium regression coverage added.
 - Copy restored text from inside the private response frame, rather than the website's masked copy action.
 - Wrapping review controls and visible keyboard focus.
-- CI installs Chromium before JavaScript suites which launch Playwright. Remote CI success is not yet verified.
+- CI installs Chromium before JavaScript suites which launch Playwright and pins Ubuntu 24.04 for the locked Playwright version. [Remote clean-build CI passed November 4](https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/41798951606) at df790ef.
 
 ## Release gates and pending features
 
@@ -27,7 +27,7 @@ Status: development prerelease. Do not label this build universally compatible o
 | Copy controls | Reviewed-copy and private-response copy implemented | 0.9.6 passes isolated clipboard/policy tests and signed-in Claude copy/paste round trip. Other hosts and streaming tests remain; Claude 0.9.7 restored rendering and copy/paste passed signed-in retest November 3 |
 | Recovery | Draft preservation and explicit failures | Crash, browser restart, extension upgrade and model download interruption matrix |
 | Accessibility | Focus styles and responsive controls | Keyboard-only and screen-reader acceptance across supported providers |
-| Distribution | Reproducible ZIPs and pinned assets | Clean-install checks on supported Chrome/hardware, remote CI green, store policy/privacy disclosures, licensing review |
+| Distribution | Reproducible ZIPs and pinned assets | Remote CI green at df790ef; clean-install checks on supported Chrome/hardware, store policy/privacy disclosures and licensing review remain |
 | Security | Isolation and consent tests | Independent review of bridge authorization, page spoofing, hostile documents and data retention |
 
 ## Shipping scope

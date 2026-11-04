@@ -132,3 +132,7 @@ Reproduced the image-heading false positive in real bundled BERT inference: SYNT
 Added deterministic masking for explicitly labelled birth dates in common numeric/full-English-month forms. Regression coverage checks repeated values, exact offsets, restoration, and unchanged unrelated reference dates. No word whitelist or cloud fallback was introduced.
 
 Validation: syntax checks, all JavaScript suites and the complete installed-extension browser suite passed. Actual NER/OCR/document processing ran; contextual inference remained mocked in provider fixtures. Signed-in acceptance of 0.9.10 is pending.
+
+## Remote CI acceptance — November 4
+
+[GitHub Actions run 41798951606](https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/41798951606) passed at df790ef5a70703364d1db72e586ad318e0cd429d: clean npm install, pinned model downloads, build, asset verification, syntax, JavaScript suites, installed-extension browser fixtures, detector evaluation, packaging and artifact upload. The first new run failed because ubuntu-latest selected Ubuntu 26.04, unsupported by pinned Playwright 1.56.1; pinning Ubuntu 24.04 resolved that environment failure. This verifies isolated Linux CI, not signed-in provider acceptance or production readiness.
