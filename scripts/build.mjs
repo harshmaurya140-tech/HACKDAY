@@ -1,0 +1,17 @@
+import {build} from 'esbuild';
+import {mkdir,copyFile,cp} from 'node:fs/promises';
+await mkdir('extension/private/vendor/ort',{recursive:true});
+await build({entryPoints:['src/ner-worker.mjs'],outfile:'extension/private/ner-worker.js',bundle:true,format:'esm',platform:'browser',target:'chrome138',minify:true});
+for(const f of ['ort-wasm-simd-threaded.wasm','ort-wasm-simd-threaded.mjs'])await copyFile('node_modules/onnxruntime-web/dist/'+f,'extension/private/vendor/ort/'+f);
+await mkdir('extension/private/vendor/pdf',{recursive:true});
+for(const f of ['pdf.mjs','pdf.worker.mjs'])await copyFile('node_modules/pdfjs-dist/build/'+f,'extension/private/vendor/pdf/'+f);
+for(const f of ['cmaps','standard_fonts','wasm'])await cp('node_modules/pdfjs-dist/'+f,'extension/private/vendor/pdf/'+f,{recursive:true});
+await copyFile('node_modules/pdf-lib/dist/pdf-lib.min.js','extension/private/vendor/pdf-lib.js');
+await mkdir('extension/licenses',{recursive:true});
+for(const [name,file] of [['pdfjs-dist','LICENSE'],['pdf-lib','LICENSE.md'],['@huggingface/tokenizers','LICENSE']])await copyFile('node_modules/'+name+'/'+file,'extension/licenses/'+name.replace('/','-')+'.txt');
+console.log('Bundled NER worker, local WASM and PDF libraries.');
+await mkdir('extension/private/vendor/ocr',{recursive:true});
+for(const file of ['tesseract.esm.min.js','worker.min.js','tesseract.min.js.LICENSE.txt','worker.min.js.LICENSE.txt'])await copyFile('node_modules/tesseract.js/dist/'+file,'extension/private/vendor/ocr/'+file);
+for(const suffix of ['','-simd','-lstm','-simd-lstm'])for(const ext of ['.wasm.js','.wasm'])await copyFile('node_modules/tesseract.js-core/tesseract-core'+suffix+ext,'extension/private/vendor/ocr/tesseract-core'+suffix+ext);
+await copyFile('node_modules/tesseract.js/LICENSE.md','extension/licenses/tesseract-js.txt');
+await copyFile('node_modules/tesseract.js-core/LICENSE','extension/licenses/tesseract-core.txt');

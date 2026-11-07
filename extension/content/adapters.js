@@ -24,8 +24,8 @@
         'button[aria-label="Send message"]',
         'form button[type="submit"]'
       ],
-      assistant:['[data-message-author-role="assistant"]','[data-role="assistant"]','[data-message-author="assistant"]'],
-      user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]']
+      assistant:['[data-message-author-role="assistant"]','[data-role="assistant"]','[data-message-author="assistant"]','[data-markdown-text-style="assistant-message"]'],
+      user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]','[data-user-message-bubble="true"]']
     },
     'chat.openai.com': {
       id:'chatgpt',
@@ -44,8 +44,8 @@
         'button[aria-label="Send prompt"]',
         'form button[type="submit"]'
       ],
-      assistant:['[data-message-author-role="assistant"]','[data-role="assistant"]','[data-message-author="assistant"]'],
-      user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]']
+      assistant:['[data-message-author-role="assistant"]','[data-role="assistant"]','[data-message-author="assistant"]','[data-markdown-text-style="assistant-message"]'],
+      user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]','[data-user-message-bubble="true"]']
     },
     'claude.ai': {
       id:'claude',
@@ -62,8 +62,20 @@
       user:['user-query','[data-test-id="user-message"]','.user-query']
     }
   };
-  const data=defs[location.hostname];
+  const data=defs[location.hostname]||{
+    id:'generic',
+    composer:['textarea','[contenteditable="true"][role="textbox"]','[contenteditable="true"][data-placeholder]','[contenteditable="true"]'],
+    send:['button[type="submit"]','button[aria-label*="Send" i]','button[data-testid*="send" i]'],
+    assistant:['[data-message-author-role="assistant"]','[data-role="assistant"]','[data-message-author="assistant"]','.markdown','.prose'],
+    user:['[data-message-author-role="user"]','[data-role="user"]','[data-message-author="user"]']
+  };
   if(!data) return;
+  if(location.hostname==='chat.deepseek.com'){
+    // Keep optional-site authorization, but use observed message bodies rather
+    // than generic markdown (which would include the model's thinking panel).
+    data.assistant=['.ds-assistant-message-main-content'];
+    data.user=['.ds-message .ds-collapsible-text'];
+  }
   data.query=(list,root=document)=>{
     for(const selector of list){try{const found=root.querySelector(selector);if(found)return found;}catch{}}
     return null;
@@ -84,11 +96,31 @@
     }
     return [];
   };
+  data.findSend=(scope)=>{
+    if(!scope?.querySelectorAll)return null;
+    const buttons=[...scope.querySelectorAll('button,[role="button"],input[type="submit"]')].filter(button=>{
+      if(button.disabled||button.getAttribute('aria-disabled')==='true'||button.classList.contains('ds-button--disabled'))return false;
+      const label=[button.getAttribute('aria-label'),button.getAttribute('title'),button.getAttribute('data-testid')].filter(Boolean).join(' ');
+      if(/stop|abort|cancel|record|microphone|voice|dictate/i.test(label)||button.hasAttribute('aria-pressed'))return false;
+      const known=data.send.some(selector=>button.matches(selector));
+      const named=/^(send|send message|send prompt|ask|submit)$/i.test((button.getAttribute('aria-label')||button.getAttribute('title')||button.value||button.textContent||'').trim());
+      const deepseek=location.hostname==='deepseek.com'&&button.matches('button.ds-hero-send-btn')&&Boolean(button.closest('.ds-input-wrapper')?.querySelector('textarea.hero-input'));
+      // Observed chat.deepseek.com arrow control: no accessible name or native button.
+      // Scope to its editor and arrow glyph so a streaming Stop control is never clicked.
+      const deepseekChat=location.hostname==='chat.deepseek.com'&&
+        Boolean(scope.querySelector('textarea[placeholder="Message DeepSeek"]'))&&
+        button.matches('[role="button"].ds-button--primary.ds-button--circle')&&
+        [...button.querySelectorAll('svg path')].some(path=>(path.getAttribute('d')||'').startsWith('M8.3125 0.980206'));
+      return (known||named||deepseek||deepseekChat)&&button.getClientRects().length>0&&getComputedStyle(button).visibility!=='hidden';
+    });
+    return buttons.length===1?buttons[0]:null;
+  };
   // Editors inside AI-generated writing canvases may also be ProseMirror.
   // Prefer the *conversation* input at the bottom of the viewport, not the
   // first arbitrary contenteditable node. Do not interact with stale/hidden
   // editors owned by the website's document editor.
   data.findComposer=(root=document)=>{
+    if(data.selectedComposer?.isConnected)return data.selectedComposer;
     const candidates=[];
     const seen=new Set();
     for(const selector of data.composer){
@@ -96,12 +128,19 @@
       try{matches=[...root.querySelectorAll(selector)];}catch{}
       for(const node of matches){
         if(seen.has(node))continue;
+        if(data.id==='generic'){
+          const label=[node.getAttribute?.('aria-label'),node.getAttribute?.('placeholder'),node.getAttribute?.('data-placeholder'),node.id].filter(Boolean).join(' ');
+          if(node.closest?.('form')?.querySelector('input[type="password"],input[autocomplete="cc-number"]'))continue;
+          if(node.disabled||node.readOnly||/search|password|email|comment|address/i.test(label))continue;
+          if(!/message|prompt|ask|chat|question/i.test(label))continue;
+
+        }
         seen.add(node);
         if(node.closest?.('[data-private-shield="true"], [data-privacy-shield="true"]'))continue;
         const rect=node.getBoundingClientRect?.();
         if(rect && (rect.height===0||rect.width===0))continue;
         const form=node.closest?.('form');
-        const ancestor=node.closest?.('[role="dialog"], [data-testid*="artifact"], [data-testid*="canvas"], [class*="document-editor"]');
+        const ancestor=node.closest?.('[role="dialog"], [data-testid*="artifact"], [data-testid*="canvas"], [class*="document-editor"], [data-oai-writing-block-surface], .writing-block-editor');
         // Host sites create separate document/canvas editors. Those are not
         // the protected chat channel, regardless of which selector matched.
         if(ancestor&&!form)continue;
@@ -110,6 +149,7 @@
         candidates.push({node,score});
       }
     }
+    if(data.id==='generic'&&candidates.length!==1)return null;
     candidates.sort((a,b)=>b.score-a.score);
     return candidates[0]?.node||null;
   };
@@ -138,7 +178,7 @@
     if(!node)return '';
     if(typeof node.querySelectorAll!=='function')return String(node.innerText||node.textContent||'').trim();
     const excluded='button, [role="button"], [role="toolbar"], [role="status"], '+
-      '[aria-hidden="true"], .sr-only, style, script, svg, user-query, '+
+      '[aria-hidden="true"], .sr-only, .cdk-visually-hidden, style, script, svg, user-query, '+
       '[data-test-id*="message-actions"], [data-test-id*="footer"]';
     const pieces=[];
     const read=(current)=>{
@@ -214,7 +254,7 @@
     }catch{return null;}
   };
   data.messageAnchor=(node)=>{
-    if(data.id==='chatgpt')return node.closest?.('[data-testid^="conversation-turn"], article[data-testid*="conversation"]')||node;
+    if(data.id==='chatgpt')return node.closest?.('[data-testid^="conversation-turn"], article[data-testid*="conversation"], [data-chatgpt-search-unit-key]')||node;
     if(data.id==='gemini')return node.closest?.('model-response, user-query')||node;
     return node;
   };
@@ -233,7 +273,12 @@
    */
   data.extractMessageText=(node,role='assistant')=>{
     let text=String(node?.innerText||node?.textContent||'').trim();
+    if(data.id==='chatgpt')return data.readableText(node);
     if(data.id==='gemini'){
+      if(role==='user'){
+        const body=node.querySelector?.('.query-text');
+        if(body)return data.readableText(body);
+      }
       let actual=node;
       if(role==='assistant')actual=data.answerBody(node);
       if(Array.isArray(actual))return actual.map(data.readableText).filter(Boolean).join('\n\n').trim();
@@ -309,6 +354,24 @@
         }
       }
       if(!changed)break;
+    }
+    // Observed Claude design-system icons can appear without a label. Remove
+    // one trailing occurrence per actual hidden icon, never all private-use
+    // characters: those may also be legitimate answer/code content.
+    if(typeof node.querySelectorAll==='function'){
+      const icons=[...node.querySelectorAll('[data-cds="Icon"][aria-hidden="true"]')];
+      for(const icon of icons.reverse()){
+        const glyph=String(icon.textContent||'').trim();
+        if(!/^[\uE000-\uF8FF]+$/u.test(glyph))continue;
+        // Only footer icons: an icon before prose cannot justify removing a
+        // matching literal character from the end of that prose.
+        const range=node.ownerDocument?.createRange();
+        if(!range)continue;
+        range.selectNodeContents(node);range.setStartAfter(icon);
+        if(!/^[\s\uE000-\uF8FF]*$/u.test(range.toString()))continue;
+        const tail=text.trimEnd();
+        if(tail.endsWith(glyph))text=tail.slice(0,-glyph.length).trimEnd();
+      }
     }
     return text.trim();
   };

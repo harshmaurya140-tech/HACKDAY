@@ -2,7 +2,12 @@
 // Runs in Chrome's isolated content-script context. No private data stored here.
 (function (root) {
   function conversationKey(rawUrl, site) {
-    const path = new URL(rawUrl).pathname;
+    const url = new URL(rawUrl), path = url.pathname;
+    if(site==='generic'&&url.hostname==='chat.deepseek.com'){
+      const match=path.match(/^\/a\/chat\/s\/([a-f0-9-]{36})\/?$/i);
+      if(match)return 'deepseek:'+match[1];
+      if(path==='/')return 'new';
+    }
     if (site === 'chatgpt') {
       const match = path.match(/^\/c\/([^/]+)/);
       return match ? `chatgpt:${match[1]}` : 'new';
@@ -15,6 +20,7 @@
       const match = path.match(/\/app\/([^/]+)/);
       return match ? `gemini:${match[1]}` : 'new';
     }
+    if(site==='generic'){const u=new URL(rawUrl);return u.origin+u.pathname+u.search+u.hash;}
     return 'new';
   }
   function createSessionNavigation(site, firstUrl, generateId) {
@@ -23,6 +29,8 @@
     let key = conversationKey(firstUrl, site);
     let bridge = makeId();
     let sendInNewChat = false;
+    let provisionalUntil = 0;
+    const temporary = value => /^chatgpt:local-chatgpt(?::|%3a)[a-f0-9-]{36}$/i.test(value);
     if (key !== 'new') known.set(key, bridge);
     return {
       get bridge() { return bridge; },
@@ -33,15 +41,22 @@
       next(nextUrl) {
         const nextKey = conversationKey(nextUrl, site);
         if (nextKey === key) return { changed: false, bridge, preserved: true };
-        if (key === 'new' && nextKey !== 'new' && sendInNewChat && !known.has(nextKey)) {
+        // ChatGPT first creates /c/local-chatgpt%3A<uuid>, then assigns its
+        // server conversation id. Carry only a locally initiated first send,
+        // once, for 60 seconds; never reuse this exception for a known chat.
+        const finalizesTemporary = temporary(key) && provisionalUntil > Date.now() &&
+          /^chatgpt:[a-f0-9-]{36}$/i.test(nextKey);
+        if (((key === 'new' && nextKey !== 'new' && sendInNewChat) || finalizesTemporary) && !known.has(nextKey)) {
           // The website named the new conversation after our sanitized Send.
           // The mapping MUST stay associated with the same bridge.
+          provisionalUntil = temporary(nextKey) ? Date.now() + 60000 : 0;
           key = nextKey;
           sendInNewChat = false;
           known.set(nextKey, bridge);
           return { changed: true, bridge, preserved: true };
         }
         key = nextKey;
+        provisionalUntil = 0;
         sendInNewChat = false;
         bridge = nextKey !== 'new' && known.has(nextKey) ? known.get(nextKey) : makeId();
         if (nextKey !== 'new') known.set(nextKey, bridge);
