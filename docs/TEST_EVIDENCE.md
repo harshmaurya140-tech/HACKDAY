@@ -150,3 +150,5 @@ Unit tests cover sequential extraction, file/count/byte/combined-text limits, em
 The complete installed-extension browser suite passed on ChatGPT, Claude and Gemini fixtures with real local PDF and image OCR. New checks attach two actual UTF-8 files, edit an extract, try a corrupt PDF, verify earlier edits survive, inspect masked combined output, verify raw data stays out of the host page, and remove files individually. Contextual inference is mocked in these fixtures. This is not signed-in multi-file acceptance.
 
 `npm audit --omit=optional --json` reported zero known vulnerabilities in the checked dependency graph. This is registry advisory evidence, not an independent audit or proof that dependencies are vulnerability-free.
+
+Final review found a twelve-occurrence cutoff in contextual span matching. Removed it and added regressions for 13, 40 and 100 repetitions with exact restoration, plus a 2,100-span case which must fail closed at the existing core limit. The first test run exposed a test assertion comparing the restoration result object instead of its text property; corrected the assertion before rerunning.

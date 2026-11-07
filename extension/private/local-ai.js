@@ -136,7 +136,8 @@
       results.push({type:item.type||'OTHER',text:value,start,end:start+value.length,
         necessary:!isNeverDisclosable(item.type) && (item.materially_required===true || item.necessary===true || item.necessity==='POTENTIALLY_REQUIRED'),
         reason:String(item.reason||'').slice(0,250)});
-      if(results.length>=12)break;
+      // Cover every occurrence. The bounded prompt and downstream span limit
+      // constrain work; excess spans fail closed rather than leaving a tail raw.
     }
     return results;
   }

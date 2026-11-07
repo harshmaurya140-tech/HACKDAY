@@ -4,6 +4,7 @@
 - Sequential extraction and a Cancel reading control. New batches commit together; unreadable, empty, cancelled or over-limit files leave existing attachments and edits unchanged.
 - A local filename selector supports individual extracted-text correction and removal. Filenames and original bytes never enter the outgoing text.
 - Recheck the combined text budget after edits made during extraction. Disable review during reading and invalidate earlier previews on changes.
+- Mask every occurrence of contextually detected private values; remove the silent twelve-occurrence cutoff. Excessive span counts still block sending.
 - Release decoded image buffers after OCR. Correct the installation ZIP version and clean-checkout test command order.
 - This build remains a prerelease: broader signed-in acceptance, independent security review and store publication are not complete. Office formats, voice/video and universal website compatibility are not claimed.
 
