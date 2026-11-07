@@ -21,11 +21,11 @@
     </section>
     <section id="preview" hidden><label for="outgoing">Exact text the chatbot will receive</label><textarea id="outgoing" readonly rows="5"></textarea><div class="toolbar"><button id="preview-cancel" class="secondary">Back to draft</button><button id="copy-reviewed" class="secondary">Copy reviewed text</button><button id="confirm-send">Send reviewed text</button></div></section>
     <div class="toolbar" id="native-recovery" hidden><button type="button" id="discard-native" class="secondary">Discard website draft</button></div>
-    <div id="attachment-info" role="status" hidden></div><details id="attachment-review" hidden><summary>Review extracted text</summary><textarea id="extracted-text" aria-label="Extracted attachment text" rows="4"></textarea><small>Correct OCR mistakes here before privacy analysis. Only reviewed text is shared.</small></details>
-    <input id="attachment-file" type="file" accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg" hidden>
+    <div id="attachment-info" role="status" hidden></div><details id="attachment-review" hidden><summary>Review extracted text</summary><label for="attachment-select">Attached files (names stay local)</label><select id="attachment-select"></select><textarea id="extracted-text" aria-label="Extracted attachment text" rows="4"></textarea><small>Up to 5 files, 8 MB each / 24 MB total; 12,000 characters with your prompt. Correct OCR mistakes before review. Only extracted text is shared; images and layout stay local.</small></details>
+    <input id="attachment-file" type="file" accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg" multiple hidden>
     <div class="toolbar bottom">
-      <button id="attach" type="button" class="secondary" aria-label="Attach an image, PDF or text document" title="Attach, paste or drop an image, PDF or text file">＋</button>
-      <button id="remove-attachment" type="button" class="secondary" hidden>Remove document</button>
+      <button id="attach" type="button" class="secondary" aria-label="Attach an image, PDF or text document" title="Attach up to 5 images, PDFs or text files — 8 MB each, 24 MB total">＋</button>
+      <button id="remove-attachment" type="button" class="secondary" hidden>Remove selected</button><button id="cancel-document" type="button" class="secondary" hidden>Cancel reading</button>
       <span class="notice" id="notice">Sensitive details stay local until you approve a disclosure.</span>
       <button id="send">Review ↑</button>
     </div>
@@ -44,6 +44,7 @@
   <script src="local-ner.js"></script>
 
   <script src="local-ai.js"></script>
+  <script src="attachment-batch.js"></script>
   <script src="frame.js"></script>
 </body>
 </html>

@@ -1,3 +1,12 @@
+# 0.10.0 development prerelease — November 7
+
+- Multiple attachments in the private composer: select, paste or drop up to five PDF/TXT/MD/CSV/PNG/JPEG files, within 8 MB per file, 24 MB total and 12,000 combined prompt/extraction characters.
+- Sequential extraction and a Cancel reading control. New batches commit together; unreadable, empty, cancelled or over-limit files leave existing attachments and edits unchanged.
+- A local filename selector supports individual extracted-text correction and removal. Filenames and original bytes never enter the outgoing text.
+- Recheck the combined text budget after edits made during extraction. Disable review during reading and invalidate earlier previews on changes.
+- Release decoded image buffers after OCR. Correct the installation ZIP version and clean-checkout test command order.
+- This build remains a prerelease: broader signed-in acceptance, independent security review and store publication are not complete. Office formats, voice/video and universal website compatibility are not claimed.
+
 # 0.9.10 development prerelease
 
 - Protect explicitly labelled birth dates in common numeric and full English-month formats; leave unlabelled reference dates to contextual analysis.

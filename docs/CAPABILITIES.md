@@ -9,6 +9,7 @@
 | Credentials | Luhn cards, IBAN checksum, SSN patterns, labeled secrets, keys, OTP/PIN/CVV and baseline checks | Pattern coverage is not exhaustive |
 | Company terms | User-maintained exact, case-sensitive terms | Not centrally enforced admin policy |
 | Text documents | Attach TXT/MD/CSV and text PDFs inside the composer; same review/send flow; workspace derivative export | 8 MB / 25 PDF pages; composer combined limit 12,000 characters, workspace 60,000; composer scans use English OCR (10 pages / 20M rendered pixels); workspace scans and encrypted PDFs rejected; binary Office files unsupported |
+| Multiple attachments | Up to five files, sequential extraction, cancellation, individual review/edit/removal; failed batch preserves earlier attachments | 8 MB each / 24 MB total; 12,000 combined prompt/text characters; originals and extracts are frame-memory only and lost on refresh |
 | Image attachments | PNG/JPEG local English OCR in composer, paste/drop, editable extraction, standard privacy review | 8 MB / 16MP; text only, no original pixels sent. Not general visual understanding; handwriting/non-English may fail |
 | Text PDF export | Brand-new text-only PDF | ASCII fonts only; use UTF-8 TXT for other scripts; layout/images discarded |
 | Visual redaction | PDF/PNG/JPEG rendering, manual regions, English OCR suggestions, new raster PDF | 8 MB; PDF 10 pages / 20M pixels; image 16MP; manual page review required |

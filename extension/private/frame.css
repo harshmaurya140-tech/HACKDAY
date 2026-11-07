@@ -211,3 +211,5 @@ textarea{font:inherit;display:block;width:100%;border:0;resize:vertical;outline:
 button:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid #6486ff;outline-offset:2px}
 #copy-restored{background:transparent;color:var(--ps-text);font-size:11px;padding:3px 6px}
 #copy-status{font-size:11px;margin-left:6px}.response-actions{align-items:center;gap:6px}
+
+#attachment-select{display:block;width:100%;max-width:100%;margin:6px 0;padding:6px;border:1px solid var(--ps-border);border-radius:8px;background:var(--ps-bg);color:inherit}#attachment-info{overflow-wrap:anywhere}

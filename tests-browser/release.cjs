@@ -226,6 +226,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
   await frame.locator('#send').click();await frame.locator('#preview').waitFor({state:'visible'});
   await frame.locator('#preview-cancel').click();
   await frame.locator('#remove-attachment').click();
+  await frame.locator('#remove-attachment').click();
   // Idle editor should fit a short native-style input, rather than a dashboard.
   const bounds=await host.locator('iframe[title="Protected AI composer"]').boundingBox();
   assert(bounds.height<190,'idle protected composer must remain compact');
@@ -233,7 +234,28 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
   await frame.locator('#attachment-file').setInputFiles({name:'broken.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-invalid')});
   await frame.locator('#status').filter({hasText:'Document not attached'}).waitFor();
   assert.equal((await host.evaluate(()=>window.sent)).length,2,'failed PDF must not auto-send');
-  console.log('PASS image OCR/private preview, PDF review/send, invalid PDF rejection and full-shell compact layout',new URL(site.url).host);
+  // Multiple real text files are added atomically; corrupt additions retain edits.
+  await frame.locator('#attachment-file').setInputFiles([
+   {name:'PRIVATE_A.txt',mimeType:'text/plain',buffer:Buffer.from('First: first.canary@example.org')},
+   {name:'PRIVATE_B.txt',mimeType:'text/plain',buffer:Buffer.from('Second: second.canary@example.org')}
+  ]);
+  await frame.locator('#attachment-info').filter({hasText:'2 file(s)'}).waitFor();
+  await frame.locator('#extracted-text').fill('Corrected: first.canary@example.org');
+  await frame.locator('#attachment-file').setInputFiles({name:'broken.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-invalid')});
+  await frame.locator('#status').filter({hasText:'Document not attached'}).waitFor();
+  assert.equal(await frame.locator('#attachment-select option').count(),2);
+  assert.equal(await frame.locator('#extracted-text').inputValue(),'Corrected: first.canary@example.org');
+  await frame.locator('#send').click();await frame.locator('#preview').waitFor({state:'visible'});
+  const multi=await frame.locator('#outgoing').inputValue();
+  assert(multi.includes('Document text (extracted locally) 2'));
+  assert(!multi.includes('canary@example.org')&&!multi.includes('PRIVATE_A')&&!multi.includes('PRIVATE_B'));
+  assert(!(await host.locator('body').textContent()).includes('Corrected: first.canary'));
+  await frame.locator('#preview-cancel').click();
+  await frame.locator('#attachment-select').selectOption('1');
+  await frame.locator('#remove-attachment').click();
+  assert.equal(await frame.locator('#extracted-text').inputValue(),'Corrected: first.canary@example.org');
+  await frame.locator('#remove-attachment').click();
+  console.log('PASS image OCR, multi-file privacy review, failed-addition retention and individual removal',new URL(site.url).host);
   await host.setViewportSize({width:420,height:500});
   await host.evaluate(()=>{const f=document.querySelector('iframe[title="Protected AI composer"]');Object.assign(f.parentElement.style,{position:'fixed',bottom:'12px',left:'10px',width:'400px',margin:'0'});});
   await host.waitForTimeout(150);

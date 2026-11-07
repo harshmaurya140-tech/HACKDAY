@@ -1,3 +1,4 @@
+document.getElementById('version').textContent='v'+chrome.runtime.getManifest().version+' · Preview';
 const status=document.getElementById('status'),enable=document.getElementById('enable');
 let active;
 (async()=>{

@@ -99,7 +99,16 @@ let previewId=null;
 let busy=false;
 let lastApprovedDecisions=null;
 let protectionEnabled=true;
-let attachment=null,documentLoading=false,documentController;
+let attachments=[],attachmentIndex=0,documentLoading=false,documentController;
+function composerText(){return attachments.length?IncognixAttachments.compose($('draft').value,attachments):$('draft').value;}
+function renderAttachments(){
+  const item=attachments[attachmentIndex];
+  $('attachment-info').hidden=!item;$('attachment-review').hidden=!item;$('remove-attachment').hidden=!item;
+  $('attachment-select').replaceChildren(...attachments.map((a,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=(i+1)+'. '+a.name;return o;}));
+  $('attachment-select').value=String(attachmentIndex);$('extracted-text').value=item?.text||'';
+  if(item)$('attachment-info').textContent=`${item.ocr?(/\.(png|jpe?g)$/i.test(item.name)?'Image text ready':'Scanned PDF text ready'):'Document attached'} · ${attachments.length} file(s) · originals stay local.`;
+  resize();
+}
 function invalidateDraft(){analysisController?.abort();revision++;current=null;previewId=null;$('preview').hidden=true;$('permission').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});}
 function fitDraft(){const d=$('draft');d.style.height='36px';d.style.height=Math.min(120,Math.max(36,d.scrollHeight))+'px';resize();}
 function updateProtectionUI(enabled){
@@ -122,7 +131,7 @@ function updateProtectionUI(enabled){
   resize();
 }
 function status(text,error=false){const el=$('status');el.textContent=text;el.className='status '+(error?'error':'ok');}
-function markBusy(on){for(const id of ['copy-reviewed','attach','remove-attachment','extracted-text','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
+function markBusy(on){for(const id of ['copy-reviewed','attach','remove-attachment','attachment-select','extracted-text','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
 function makeChoice(e){
   const box=document.createElement('div');box.className='choice';
   const heading=document.createElement('div');heading.className='choice-header';
@@ -179,8 +188,8 @@ async function prepareAndSend(decisions={}){
 }
 async function doSend(){
   if(busy||documentLoading||!protectionEnabled)return;
-  if(current && !$('permission').hidden){status('Choose disclosure settings and click Approve & send.',true);return;}
-  const text=$('draft').value+(attachment?'\n\nDocument text (extracted locally):\n'+attachment.text:'');
+  if(current && !$('permission').hidden){status('Choose disclosure settings and click Review outgoing text.',true);return;}
+  const text=composerText();
   if(!text.trim())return;
   if(text.length>12000){status('Prompt and document exceed 12,000 characters. Use a shorter document or excerpt.',true);return;}
   current=null;previewId=null;$('preview').hidden=true;
@@ -226,37 +235,47 @@ async function initComposer(){
   $('draft').addEventListener('input',fitDraft);
   document.querySelector('.tools').addEventListener('toggle',resize);
   $('attachment-review').addEventListener('toggle',resize);
-  $('extracted-text').addEventListener('input',()=>{if(attachment){attachment.text=$('extracted-text').value;invalidateDraft();}});
+  $('extracted-text').maxLength=12000;
+  $('extracted-text').addEventListener('input',()=>{if(attachments[attachmentIndex]){attachments[attachmentIndex].text=$('extracted-text').value;invalidateDraft();}});
+  $('attachment-select').addEventListener('change',()=>{attachmentIndex=Number($('attachment-select').value);renderAttachments();});
   $('attach').addEventListener('click',()=>{if(!busy&&!documentLoading)$('attachment-file').click();});
   $('remove-attachment').addEventListener('click',()=>{
-    documentController?.abort();documentLoading=false;attachment=null;$('attachment-file').value='';
-    $('attachment-info').hidden=true;$('attachment-review').hidden=true;$('extracted-text').value='';$('remove-attachment').hidden=true;$('attach').disabled=false;
-    invalidateDraft();status('Document removed');resize();
+    if(busy||documentLoading)return;
+    attachments.splice(attachmentIndex,1);attachmentIndex=Math.max(0,Math.min(attachmentIndex,attachments.length-1));
+    invalidateDraft();renderAttachments();status('Selected document removed');
   });
-  async function loadAttachment(file){
-    if(!file||busy||!protectionEnabled)return;
-    $('attachment-review').hidden=true;$('extracted-text').value='';
-    documentController?.abort();const controller=new AbortController();documentController=controller;
-    invalidateDraft();attachment=null;documentLoading=true;$('attach').disabled=true;
-    $('attachment-info').hidden=false;$('attachment-info').textContent='Reading document locally…';$('remove-attachment').hidden=false;resize();
+  $('cancel-document').addEventListener('click',()=>{
+    documentController?.abort();status('Cancelling document reading…');
+  });
+  async function loadAttachments(files){
+    if(!files.length||busy||!protectionEnabled)return;
+    if(documentLoading){status('Wait for document reading or cancel it before adding files.',true);return;}
+    const controller=new AbortController();documentController=controller;
+    invalidateDraft();documentLoading=true;
+    for(const id of ['attach','remove-attachment','attachment-select','extracted-text','send','protection-toggle'])$(id).disabled=true;
+    $('cancel-document').hidden=false;
+    $('attachment-info').hidden=false;resize();
     try{
-      const {readDocument}=await import('./documents.mjs');
-      const isImage=/\.(png|jpe?g)$/i.test(file.name);
-      const result=isImage?await (await import('./image-text.mjs')).readImage(file,{signal:controller.signal,onProgress:p=>{if(!controller.signal.aborted)$('attachment-info').textContent=`Reading image locally… ${p}%`;}}):await readDocument(file,{signal:controller.signal,ocr:true,onProgress:p=>{if(controller===documentController&&!controller.signal.aborted)$('attachment-info').textContent=`Reading scanned PDF locally… ${p}%`;}});
-      if(controller!==documentController||controller.signal.aborted)return;
-      if(result.text.length+35+$('draft').value.length>12000)throw Error('Prompt and document exceed 12,000 characters. Choose a shorter PDF or excerpt.');
-      attachment=result;$('attachment-review').hidden=false;$('attachment-review').open=Boolean(result.ocr);$('extracted-text').value=result.text;
-      $('attachment-info').textContent=`${result.ocr?(isImage?'Image text ready':'Scanned PDF text ready'):'Document attached'} · ${result.pages} page(s) · original stays local. Review extracted text before sending.`;
-      status('Document ready for private review');
-    }catch(e){if(!controller.signal.aborted){attachment=null;$('attachment-info').textContent=e.message;status('Document not attached',true);}}
-    finally{if(controller===documentController){documentLoading=false;$('attach').disabled=busy;$('attachment-file').value='';resize();}}
+      const added=await IncognixAttachments.readBatch(files,attachments,{
+        signal:controller.signal,draft:$('draft').value,
+        onProgress:(index,total,p)=>{if(controller===documentController&&!controller.signal.aborted)$('attachment-info').textContent=`Reading file ${index+1} of ${total} locally…${p===null?'':' '+p+'%'}`;},
+        read:async(file,options)=> /\.(png|jpe?g)$/i.test(file.name)?(await import('./image-text.mjs')).readImage(file,options):(await import('./documents.mjs')).readDocument(file,{...options,ocr:true})
+      });
+      controller.signal.throwIfAborted();
+      // The user may continue editing the prompt while extraction runs.
+      if(IncognixAttachments.compose($('draft').value,[...attachments,...added]).length>12000)throw Error('Prompt and attachments exceed 12,000 characters. Shorten your draft or documents.');
+      attachmentIndex=attachments.length;attachments.push(...added);renderAttachments();
+      $('attachment-review').open=true;status('Documents ready. Review extracted text before sharing.');
+    }catch(e){
+      renderAttachments();status(controller.signal.aborted?'Reading cancelled. Existing attachments are unchanged.':'Document not attached: '+e.message+' Existing attachments are unchanged.',!controller.signal.aborted);
+    }finally{
+      if(controller===documentController){documentLoading=false;documentController=null;$('cancel-document').hidden=true;$('attachment-file').value='';markBusy(false);resize();}
+    }
   }
-  $('attachment-file').addEventListener('change',()=>loadAttachment($('attachment-file').files[0]));
+  $('attachment-file').addEventListener('change',()=>loadAttachments([...$('attachment-file').files]));
   const ingestFiles=(event,files)=>{
     if(!files.length)return;
-    event.preventDefault();event.stopPropagation();
-    if(files.length!==1){status('Attach one file at a time. Your current attachment is unchanged.',true);return;}
-    loadAttachment(files[0]);
+    event.preventDefault();event.stopPropagation();loadAttachments(files);
   };
   $('composer').addEventListener('dragover',event=>{if([...event.dataTransfer.types].includes('Files')){event.preventDefault();event.dataTransfer.dropEffect='copy';}});
   $('composer').addEventListener('drop',event=>ingestFiles(event,[...event.dataTransfer.files]));
@@ -273,7 +292,7 @@ async function initComposer(){
     markBusy(true);$('draft').readOnly=true;
     try{
       const result=await message({type:'PREPARE_AND_SEND',draftId:current.draft_id,previewId});
-      $('draft').value='';attachment=null;$('attachment-info').hidden=true;$('attachment-review').hidden=true;$('extracted-text').value='';$('remove-attachment').hidden=true;fitDraft();await message({type:'SAVE_EDITOR',text:''});current=null;previewId=null;$('preview').hidden=true;
+      $('draft').value='';attachments=[];attachmentIndex=0;renderAttachments();fitDraft();await message({type:'SAVE_EDITOR',text:''});current=null;previewId=null;$('preview').hidden=true;
       status('Sanitized prompt handed to the AI website');$('notice').textContent=`Protected ${result.replacements} field(s). Review the chat to confirm delivery.`;
     }catch(e){status(e.message,true);showRecovery(e);}
     finally{$('draft').readOnly=false;markBusy(false);resize();}

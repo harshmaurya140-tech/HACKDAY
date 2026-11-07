@@ -142,3 +142,11 @@ Validation: syntax checks, all JavaScript suites and the complete installed-exte
 Verified ZIP CRC, safe member paths and SHA256SUMS, extracted `incognix-0.9.10-extension.zip`, then ran the complete installed-extension browser suite with INCOGNIX_EXTENSION pointing at the extracted artifact in a fresh Chromium profile. All checks passed, including actual NER/OCR/document processing and ChatGPT/Claude/Gemini fixtures. Contextual inference is mocked in those fixtures. Extension ZIP SHA-256: `e32531614e66723f92833c1539ef6df1ea598cb718492cfff7c9efa927b16e46`. Local report: `artifacts/package-smoke.json`.
 
 Separately, signed-in Chrome with 0.9.10 passed real local analysis, cancellation with draft retention, reviewed masked send, private prompt/reply restoration, native clipboard round trip and same-tab refresh on Claude using synthetic name/date data. See LIVE_TEST_CHECKPOINT.md for exact scope. No universal compatibility or final production readiness claim.
+
+## 0.10.0 multiple attachments — November 7
+
+Unit tests cover sequential extraction, file/count/byte/combined-text limits, empty extraction, abort after an uncooperative reader resolves, no later task after abort, immutable existing selection on failure, and omission of filenames from combined text. A Chromium UI lifecycle test uses the real batch logic with controlled readers to verify cancellation, preserved edits, atomic failure, selected removal, preview without submission, and a draft edit during extraction exceeding the combined limit.
+
+The complete installed-extension browser suite passed on ChatGPT, Claude and Gemini fixtures with real local PDF and image OCR. New checks attach two actual UTF-8 files, edit an extract, try a corrupt PDF, verify earlier edits survive, inspect masked combined output, verify raw data stays out of the host page, and remove files individually. Contextual inference is mocked in these fixtures. This is not signed-in multi-file acceptance.
+
+`npm audit --omit=optional --json` reported zero known vulnerabilities in the checked dependency graph. This is registry advisory evidence, not an independent audit or proof that dependencies are vulnerability-free.
