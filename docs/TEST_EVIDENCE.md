@@ -152,3 +152,7 @@ The complete installed-extension browser suite passed on ChatGPT, Claude and Gem
 `npm audit --omit=optional --json` reported zero known vulnerabilities in the checked dependency graph. This is registry advisory evidence, not an independent audit or proof that dependencies are vulnerability-free.
 
 Final review found a twelve-occurrence cutoff in contextual span matching. Removed it and added regressions for 13, 40 and 100 repetitions with exact restoration, plus a 2,100-span case which must fail closed at the existing core limit. The first test run exposed a test assertion comparing the restoration result object instead of its text property; corrected the assertion before rerunning.
+
+Final 0.10.0 extracted ZIP passed the complete fresh-profile browser suite after the repeated-value fix. Extension SHA-256: `3b0483b2b8db1d282e76614b4f0c25e9018284ce0590053a6168eba73aaea3c1`. Clean GitHub CI passed at `4e4ed9778dd597b1eddab7022298e06a53b10b92`: https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/42372971182 .
+
+Signed-in 0.10.0 Claude two-text-file acceptance also passed: real local analysis, shared name token across files, masked email, reviewed send, restored prompt/answer and native clipboard round trip. See LIVE_TEST_CHECKPOINT.md for the remaining harmless-topic over-masking and attachment loss on reload.

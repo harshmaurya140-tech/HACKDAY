@@ -161,3 +161,13 @@ Entered a synthetic request confirming Nora Vale and the birth date 15 March 200
 Copy restored text followed by native paste into the empty private composer reproduced that answer exactly. Cleared only that synthetic unsent paste. A normal same-tab refresh created a new bridge and restored both messages again. Screenshot saved locally at `artifacts/live-0.9.10-claude.png` (ignored, not published).
 
 PASS: cancellation UI/draft retention, real local analysis, reviewed masked submission, prompt/reply restoration, actual clipboard round trip and same-tab refresh. This does not prove immediate termination of GPU work, restoration after closing the tab, every provider, or the earlier image reply's same-tab restoration.
+
+## 0.10.0 signed-in Claude multi-file acceptance — November 7
+
+Chrome Extensions displayed 0.10.0 enabled after the user-confirmed reload. Used only synthetic files `01-contact.txt` (Nora Vale / nora.test@example.org) and `02-note.txt` (Nora Vale / paper airplanes) in the existing synthetic conversation https://claude.ai/chat/c1a114e2-580f-44a6-b8d7-8c7e3fccdb78 . Native file selection read both together and the file selector exposed each correct extract. The page subsequently reloaded before analysis completed: the typed instruction recovered but attachments did not, consistent with the documented frame-memory limitation. Reattached the files individually using accessible file-picker actions after coordinate control failed temporarily.
+
+Actual local analysis completed. Kept all disclosure choices hidden. The outgoing preview numbered both documents, omitted original filenames, reused `[PRIVATE_PERSON_1_4C5B37]` for the name in both files, masked email as `[PRIVATE_EMAIL_1_490077]`, and also masked the harmless topic as `[PRIVATE_OTHER_1_067379]`. That topic classification is an observed over-masking case; no perfect detection claim.
+
+Explicitly sent only after inspecting the preview. Claude accepted the masked message. Private frames restored the full prompt and answer: “Hello Nora Vale, I’m reaching out at nora.test@example.org to follow up on our meeting about paper airplanes.” Copy restored text followed by native paste into the empty private composer reproduced the answer exactly. Cleared only the synthetic pasted draft without sending it. Screenshot saved locally as `artifacts/live-0.10.0-multifile.png` (ignored, not published).
+
+PASS for signed-in two-file extraction/selection, real local analysis, consistent repeated-value masking, reviewed delivery, prompt/answer restoration and actual clipboard round trip. This does not establish every format combination, post-refresh attachment recovery, all providers or general image understanding.
