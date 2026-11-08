@@ -1,3 +1,13 @@
+# 0.11.0 — Office, local speech and web-component integration
+
+- Add DOCX/XLSX/PPTX text extraction with bounded ZIP expansion, CRC checks, entity-declaration rejection, slide ordering and cached spreadsheet values. Never execute macros/formulas or fetch external relationships.
+- Bundle a pinned quantized Whisper English speech model and runtime. Audio-bearing MP4/WebM and supported audio files become editable local transcripts; original media stays local. Limits: two minutes, 8 MB and a three-minute processing deadline.
+- Add explicit-click microphone recording, visible Stop/Cancel controls, bounded PCM capture and track cleanup. Restrictive site microphone policy may require attaching a recorded file instead.
+- Share attachment readers across composer/workspace; all extracted content uses the existing mandatory masked preview and confirmed-send flow.
+- Discover open shadow-root editors, nested generic send controls and streamed replies. Verify isolation, masked send and restoration in an installed-extension fixture.
+- Add extension icons, model/license provenance, Office/media threat-model notes and distribution disclosures.
+- Tests use actual Office decompression, speech inference, synthetic microphone capture and WebM audio decoding. Contextual inference in provider fixtures remains mocked. Universal website compatibility and perfect detection are not claimed.
+
 # 0.10.1 development prerelease — November 8
 
 - Protect explicitly labelled credentials regardless of length: short passwords/API keys are no longer skipped.

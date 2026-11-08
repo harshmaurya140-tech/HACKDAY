@@ -20,6 +20,10 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))?.getAttribute('role')),'button');
  await p.evaluate(()=>document.querySelector('[role="button"]').setAttribute('aria-disabled','true'));
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('section'))),null);
+ await p.evaluate(()=>{document.body.innerHTML='<chat-widget></chat-widget>';const root=document.querySelector('chat-widget').attachShadow({mode:'open'});root.innerHTML='<form><textarea placeholder="Ask privately"></textarea><send-widget></send-widget></form><div data-role="assistant">Nested reply</div>';root.querySelector('send-widget').attachShadow({mode:'open'}).innerHTML='<button aria-label="Send">Send</button>';window.__privacyShieldAdapter.selectedComposer=null;});
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findComposer()?.placeholder),'Ask privately','open-shadow composer discovered');
+ assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(window.__privacyShieldAdapter.findComposer().closest('form'))?.textContent),'Send','nested shadow send discovered');
+ assert.deepEqual(await p.evaluate(()=>window.__privacyShieldAdapter.queryAll(window.__privacyShieldAdapter.assistant).map(n=>n.textContent)),['Nested reply'],'shadow replies discovered');
  await p.route('https://deepseek.com/**',r=>r.fulfill({contentType:'text/html',body:'<div class="ds-input-wrapper"><textarea class="hero-input" maxlength="800" placeholder="Ask anything"></textarea><button aria-pressed="true" aria-label="Search"></button><button class="ds-hero-send-btn">↑</button></div>'}));
  await p.goto('https://deepseek.com/en/');await p.addScriptTag({path:path.resolve('extension/content/adapters.js')});
  assert.equal(await p.evaluate(()=>window.__privacyShieldAdapter.findSend(document.querySelector('.ds-input-wrapper'))?.className),'ds-hero-send-btn');

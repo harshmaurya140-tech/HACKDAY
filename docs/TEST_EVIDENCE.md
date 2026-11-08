@@ -165,3 +165,13 @@ Signed-in 0.10.0 Claude two-text-file acceptance also passed: real local analysi
 - These are automated checks, not a new signed-in acceptance result. The November 7 Claude acceptance remains evidence for 0.10.0 only.
 
 Final 0.10.1 code `9a3d82c`: [clean CI passed](https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/42455105759). Fresh-profile extracted-ZIP browser suite also passed; extension SHA-256 `b60e36ba550ccaf60e1a11a6137854945d9e738dbfb66ed6d80954fbf5e568ef`.
+
+## November 8 — 0.11.0 Office, speech, recording and web components
+
+- Complete syntax/JavaScript suites and installed-extension browser suite passed locally.
+- Real DOCX/XLSX/PPTX ZIP/XML extraction: body/header text, shared/inline cells and cached-value annotation, presentation relationship order, DTD/macro/oversized XML/external relationship/path-traversal rejection and pre-abort.
+- Actual bundled Whisper transcribed a synthetic WAV: “Hello, this is a local privacy test. Please keep my information private.” External HTTP(S) requests were blocked and counted; none occurred during Office/media extraction.
+- Actual audio-bearing VP8/Opus WebM was created by Chromium MediaRecorder and transcribed locally. Silence, malformed audio and over-duration files were rejected. Active transcription cancellation passed.
+- Actual getUserMedia capture with Chromium's synthetic microphone device produced PCM WAV; composer recording cancellation retained the draft. This is not a human microphone acceptance test on every device/site.
+- Real composer DOCX-plus-WAV extraction, masked outgoing preview, explicit send and no original filenames/email in provider payload passed. Provider contextual inference is mocked in this fixture; document/speech processing is real.
+- Installed extension inside an open shadow-root editor: private draft, masked send and local restored reply passed. Adapter tests cover nested shadow send controls and reply discovery. Closed roots/cross-origin frames are not claimed.

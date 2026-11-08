@@ -1,18 +1,18 @@
 {
   "name": "incognix-release-build",
   "private": true,
-  "version": "0.10.1",
+  "version": "0.11.0",
   "scripts": {
-    "prepare:model": "node scripts/download-ner.mjs && node scripts/download-ocr.mjs",
+    "prepare:model": "node scripts/download-ner.mjs && node scripts/download-ocr.mjs && node scripts/download-speech.mjs",
     "build:model": "node scripts/build.mjs",
     "test": "for t in tests-js/test-*.cjs; do node \"$t\" || exit 1; done",
-    "verify:model": "node scripts/verify-ner.mjs && node scripts/download-ocr.mjs --verify",
+    "verify:model": "node scripts/verify-ner.mjs && node scripts/download-ocr.mjs --verify && node scripts/download-speech.mjs --verify",
     "build:model:complete": "npm run prepare:model && npm run build:model && npm run verify:model",
     "build": "node scripts/build.mjs",
     "prepare:ner": "node scripts/download-ner.mjs",
     "verify:ner": "node scripts/verify-ner.mjs",
     "evaluate:ner": "node tests-browser/ner-evaluation.cjs",
-    "test:browser": "node tests-browser/release.cjs",
+    "test:browser": "node tests-browser/release.cjs && node tests-browser/multimodal.cjs",
     "package": "python3 scripts/package.py",
     "check": "node scripts/check.mjs"
   },

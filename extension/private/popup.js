@@ -8,7 +8,7 @@ let active;
   if(u.protocol!=='https:'){status.textContent='Open an HTTPS AI chat website first.';return;}
   enable.disabled=false;
   try{const result=await chrome.tabs.sendMessage(active.id,{type:'INCOGNIX_STATUS'});
-    if(result?.installed){status.textContent=result.enabled?'Protected composer active. Attach, paste or drop an image or PDF.':'Protection is OFF. Use the switch beside the website input to turn it on.';enable.textContent='Check integration';}
+    if(result?.installed){status.textContent=result.enabled?'Protected composer active. Attach supported documents, images or media; record voice locally.':'Protection is OFF. Use the switch beside the website input to turn it on.';enable.textContent='Check integration';}
     else status.textContent='No supported input detected. Use Choose the AI input on this page.';
   }catch{status.textContent='Enable the private composer for this site.';}
 })().catch(e=>status.textContent=e.message);
@@ -22,7 +22,7 @@ enable.addEventListener('click',async()=>{
     const result=await chrome.runtime.sendMessage({type:'ENABLE_SITE',tabId:active.id});
     if(!result?.ok)throw Error(result?.error||'Could not enable protection');
     const state=await chrome.tabs.sendMessage(active.id,{type:'INCOGNIX_STATUS'});
-    status.textContent=state?.installed?(state.enabled?'Protected composer ready. Attach, paste or drop an image or PDF.':'Protection is OFF. Use the switch beside the website input to turn it on.'):'No unambiguous supported chat input found. Open the chat input, then check again. This layout is not protected.';
+    status.textContent=state?.installed?(state.enabled?'Protected composer ready. Attach supported documents, images or media; record voice locally.':'Protection is OFF. Use the switch beside the website input to turn it on.'):'No unambiguous supported chat input found. Open the chat input, then check again. This layout is not protected.';
   }catch(e){status.textContent=e.message;}
   finally{enable.disabled=false;}
 });

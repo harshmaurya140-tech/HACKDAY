@@ -118,7 +118,7 @@
     // Required for Chrome Prompt API in a cross-origin extension iframe.
     // An AI site's Permissions-Policy header may still disallow delegation.
     // Delegate write-only clipboard access for explicit copy clicks in the private frame.
-    f.allow='language-model; clipboard-write';
+    f.allow='language-model; clipboard-write; microphone';
     f.style.cssText='display:block;box-sizing:border-box;flex:0 0 auto;min-width:0;max-width:100%;width:100%;height:'+ (mode==='composer'? '140px':'75px')+';border:0;background:transparent;position:relative;z-index:1;overflow:hidden;clear:both;margin:0 auto;';
     return f;
   }
@@ -205,7 +205,7 @@
     if(hiddenComposer?.isConnected)restoreNativeContainer(hiddenComposer);
     nativeDraft.reset();
     nativeEditor=null;
-    const original=containerFor(native);if(!original||!original.parentElement)return;
+    const original=containerFor(native);if(!original||!original.parentNode)return;
     // A generic editor may sit directly under body or inside a transcript form.
     // Never hide the entire page/transcript to replace a single input.
     if(original===document.body||original===document.documentElement)return;
@@ -213,7 +213,7 @@
     // The native site form remains in the DOM for sanitized submission only.
     privateComposer=mkFrame('composer','','assistant',sampleComposerAppearance(native,original));
     if(!privateComposer)return;
-    original.parentElement.insertBefore(privateComposer,original);
+    original.parentNode.insertBefore(privateComposer,original);
     if(protectionEnabled)hideNativeContainer(original);
     hiddenComposer=original;
     nativeEditor=native;
@@ -576,6 +576,13 @@
   });
   mutation=new MutationObserver(()=>scheduleScan());
   mutation.observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+  const observedRoots=new WeakSet();
+  function observeComponents(){
+    for(const root of adapter.roots?.()||[])if(root!==document&&!observedRoots.has(root)){
+      mutation.observe(root,{childList:true,subtree:true,characterData:true});observedRoots.add(root);
+    }
+  }
+  observeComponents();
   pollTimer=setInterval(()=>{
     if(!checkRuntime())return;
     if(location.href!==lastLocation){
@@ -586,7 +593,7 @@
         else resetForNavigation(change.bridge);
       }
     }
-    installComposer();
+    observeComponents();installComposer();
     if(!protectionEnabled)positionReenableFrame();
   },1800);
   if(typeof window.addEventListener==='function')window.addEventListener('resize',()=>{

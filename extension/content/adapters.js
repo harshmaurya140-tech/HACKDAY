@@ -76,8 +76,21 @@
     data.assistant=['.ds-assistant-message-main-content'];
     data.user=['.ds-message .ds-collapsible-text'];
   }
+  // Open web-component roots are common in embedded AI tools. Keep traversal
+  // bounded and never enter cross-origin frames or closed component roots.
+  data.roots=(root=document)=>{
+    const roots=[root];let visited=0;
+    for(let i=0;i<roots.length&&roots.length<128;i++){
+      const owner=roots[i].ownerDocument||roots[i];
+      if(!owner.createTreeWalker)continue;
+      const walker=owner.createTreeWalker(roots[i],1);let node;
+      while((node=walker.nextNode())&&visited++<20000){if(node.shadowRoot)roots.push(node.shadowRoot);if(roots.length>=128)break;}
+      if(visited>=20000)break;
+    }
+    return roots;
+  };
   data.query=(list,root=document)=>{
-    for(const selector of list){try{const found=root.querySelector(selector);if(found)return found;}catch{}}
+    for(const scope of data.roots(root))for(const selector of list){try{const found=scope.querySelector(selector);if(found)return found;}catch{}}
     return null;
   };
   data.queryAll=(list,root=document)=>{
@@ -87,7 +100,7 @@
     // into the restored message instead of only the response body.
     for(const selector of list){
       try{
-        const found=[...root.querySelectorAll(selector)];
+        const found=data.roots(root).flatMap(scope=>[...scope.querySelectorAll(selector)]);
         if(found.length){
           // Do not make overlays for both a parent and its nested match.
           return found.filter(node=>!found.some(other=>other!==node&&other.contains(node)));
@@ -98,7 +111,7 @@
   };
   data.findSend=(scope)=>{
     if(!scope?.querySelectorAll)return null;
-    const buttons=[...scope.querySelectorAll('button,[role="button"],input[type="submit"]')].filter(button=>{
+    const buttons=data.roots(scope).flatMap(root=>[...root.querySelectorAll('button,[role="button"],input[type="submit"]')]).filter(button=>{
       if(button.disabled||button.getAttribute('aria-disabled')==='true'||button.classList.contains('ds-button--disabled'))return false;
       const label=[button.getAttribute('aria-label'),button.getAttribute('title'),button.getAttribute('data-testid')].filter(Boolean).join(' ');
       if(/stop|abort|cancel|record|microphone|voice|dictate/i.test(label)||button.hasAttribute('aria-pressed'))return false;
@@ -123,9 +136,10 @@
     if(data.selectedComposer?.isConnected)return data.selectedComposer;
     const candidates=[];
     const seen=new Set();
+    const roots=data.roots(root);
     for(const selector of data.composer){
       let matches=[];
-      try{matches=[...root.querySelectorAll(selector)];}catch{}
+      try{matches=roots.flatMap(scope=>[...scope.querySelectorAll(selector)]);}catch{}
       for(const node of matches){
         if(seen.has(node))continue;
         if(data.id==='generic'){

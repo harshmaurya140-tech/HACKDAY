@@ -15,3 +15,7 @@ for(const file of ['tesseract.esm.min.js','worker.min.js','tesseract.min.js.LICE
 for(const suffix of ['','-simd','-lstm','-simd-lstm'])for(const ext of ['.wasm.js','.wasm'])await copyFile('node_modules/tesseract.js-core/tesseract-core'+suffix+ext,'extension/private/vendor/ocr/tesseract-core'+suffix+ext);
 await copyFile('node_modules/tesseract.js/LICENSE.md','extension/licenses/tesseract-js.txt');
 await copyFile('node_modules/tesseract.js-core/LICENSE','extension/licenses/tesseract-core.txt');
+await build({entryPoints:['src/speech-worker.mjs'],outfile:'extension/private/speech-worker.js',bundle:true,format:'esm',platform:'browser',target:'chrome138',minify:true});
+await mkdir('extension/private/vendor/speech',{recursive:true});
+for(const file of ['ort-wasm-simd-threaded.mjs','ort-wasm-simd-threaded.wasm'])await copyFile('node_modules/@huggingface/transformers/node_modules/onnxruntime-web/dist/'+file,'extension/private/vendor/speech/'+file);
+await copyFile('node_modules/@huggingface/transformers/LICENSE','extension/licenses/transformers-js.txt');

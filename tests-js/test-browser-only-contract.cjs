@@ -12,7 +12,7 @@ const frame=fs.readFileSync(path.join(ext,'private/frame.js'),'utf8');
 assert.match(frame,/LocalPrivacyAI\.analyze\(text,\{onStatus:/);
 assert.doesNotMatch(frame,/type:\s*'PAIR'/,'no backend pairing permitted');
 const content=fs.readFileSync(path.join(ext,'content/content.js'),'utf8');
-assert.match(content,/f\.allow='language-model; clipboard-write'/);
+assert.match(content,/f\.allow='language-model; clipboard-write; microphone'/);
 const html=fs.readFileSync(path.join(ext,'private/frame.html'),'utf8');
 assert.match(html,/local-ai\.js/);
 console.log('PASS: no Python, localhost or backend runtime dependency in extension');

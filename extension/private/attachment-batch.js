@@ -8,7 +8,7 @@
     if(existing.length+files.length>MAX_FILES)throw Error('Attach up to 5 files. Existing attachments are unchanged.');
     if(files.some(f=>!f.size||f.size>MAX_FILE_BYTES))throw Error('Each file must be nonempty and at most 8 MB.');
     if([...existing,...files].reduce((n,f)=>n+f.size,0)>MAX_BYTES)throw Error('Combined attachment limit: 24 MB.');
-    if(files.some(f=>! /\.(pdf|txt|md|csv|png|jpe?g)$/i.test(f.name)))throw Error('Choose PDF, TXT, Markdown, CSV, PNG or JPEG files.');
+    if(files.some(f=>! /\.(pdf|txt|md|csv|png|jpe?g|docx|xlsx|pptx|wav|mp3|m4a|ogg|flac|webm|mp4)$/i.test(f.name)))throw Error('Choose PDF, text, PNG/JPEG, DOCX/XLSX/PPTX, or supported audio/video files.');
     const added=[];
     for(let i=0;i<files.length;i++){
       signal.throwIfAborted();

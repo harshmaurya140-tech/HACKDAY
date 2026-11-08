@@ -146,6 +146,19 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
  assert(!rasterBytes.includes(Buffer.from('PRIVATE_METADATA_CANARY')));assert.equal(redactorExternal.length,0);
  await redactor.screenshot({path:'artifacts/redactor.png',fullPage:true});await redactor.close();
  console.log('PASS raster PDF rebuild: flattened black pixels, no recoverable text/attachments, local OCR network guard');
+ const shadow=await context.newPage();
+ await shadow.route('https://chatgpt.com/c/shadow-fixture',r=>r.fulfill({contentType:'text/html',body:`<!doctype html><chat-shell></chat-shell><script>
+ const root=document.querySelector('chat-shell').attachShadow({mode:'open'});root.innerHTML='<section style="margin:30px;width:600px"><form><textarea id="prompt-textarea" style="width:500px;height:70px"></textarea><button id="composer-submit-button" type="button">Send</button></form><div id="reply"></div></section>';
+ root.querySelector('button').onclick=()=>{window.shadowSent=root.querySelector('textarea').value;root.querySelector('textarea').value='';const reply=document.createElement('div');reply.setAttribute('data-message-author-role','assistant');reply.textContent='Received '+window.shadowSent;root.querySelector('#reply').append(reply);};
+ </script>`}));
+ await shadow.goto('https://chatgpt.com/c/shadow-fixture');
+ const sf=shadow.frameLocator('iframe[title="Protected AI composer"]');await sf.locator('#draft').waitFor();
+ await shadow.frames().find(f=>f.url().includes('mode=composer')).evaluate(()=>{LocalPrivacyAI.analyze=async()=>({entities:[]});});
+ await sf.locator('#draft').fill('Contact shadow.canary@example.org');await sf.locator('#send').click();await sf.locator('#preview').waitFor({state:'visible'});await sf.locator('#confirm-send').click();
+ await shadow.waitForFunction(()=>window.shadowSent);assert(!(await shadow.evaluate(()=>window.shadowSent)).includes('shadow.canary@example.org'));
+ await shadow.waitForFunction(()=>[...document.querySelector('chat-shell').shadowRoot.querySelectorAll('iframe')].some(f=>f.src.includes('mode=response')));
+ await shadow.frameLocator('iframe[src*="mode=response"]').locator('#restored-text').filter({hasText:'shadow.canary@example.org'}).waitFor();
+ await shadow.close();console.log('PASS installed shadow-root composer: isolated draft, reviewed masked send and local reply restoration');
  const sites=[
   {url:'https://chatgpt.com/',editor:'<textarea id="prompt-textarea"></textarea>',button:'id="composer-submit-button"'},
   {url:'https://claude.ai/chat/fixture',editor:'<div class="ProseMirror" contenteditable="true" role="textbox"></div>',button:'aria-label="Send message"'},

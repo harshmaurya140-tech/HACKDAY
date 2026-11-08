@@ -9,3 +9,5 @@ extension/private/vendor/
 *.wasm
 
 .DS_Store
+
+extension/private/speech-worker.js

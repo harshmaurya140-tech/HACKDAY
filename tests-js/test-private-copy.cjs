@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {chromium}=require('playwright');
-assert(fs.readFileSync(path.join(__dirname,'../extension/content/content.js'),'utf8').includes("f.allow='language-model; clipboard-write'"),'embedded copy needs write-only clipboard delegation');
+assert(fs.readFileSync(path.join(__dirname,'../extension/content/content.js'),'utf8').includes("f.allow='language-model; clipboard-write; microphone'"),'embedded copy needs write-only clipboard delegation');
 (async()=>{
  const browser=await chromium.launch({headless:true});
  try{

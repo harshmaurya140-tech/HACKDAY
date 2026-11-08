@@ -1,4 +1,5 @@
-import {readDocument,createTextPDF,extractGeneratedPDF} from './documents.mjs';
+import {readAttachment} from './read-attachment.mjs';
+import {createTextPDF,extractGeneratedPDF} from './documents.mjs';
 const $=id=>document.getElementById(id);
 let controller,documentController;let documentReading=0,documentJob=0;
 let session=PrivacyCore.newSession(),attachment=null,revision=0,job=0,draft=null,prepared=null,working=false,objectURL=null;
@@ -14,7 +15,7 @@ $('file').onchange=async()=>{
  documentController?.abort();documentController=new AbortController();
  invalidate();attachment=null;const generation=++documentJob;const file=$('file').files[0];if(!file)return;
  documentReading=generation;buttons();$('document-info').textContent='Reading locally…';
- try{const result=await readDocument(file,{signal:documentController.signal});if(generation!==documentJob)return;attachment=result;$('document-info').textContent=`${result.pages} page(s), ${result.text.length} characters. ${result.notice}`;$('remove-file').hidden=false;}
+ try{const result=await readAttachment(file,{signal:documentController.signal});if(generation!==documentJob)return;attachment=result;$('document-info').textContent=`${result.pages} page(s), ${result.text.length} characters. ${result.notice}`;$('remove-file').hidden=false;}
  catch(e){if(generation===documentJob)$('document-info').textContent=e.message;}
  finally{if(documentReading===generation){documentReading=0;$('file').value='';}buttons();}
 };

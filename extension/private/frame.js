@@ -131,7 +131,7 @@ function updateProtectionUI(enabled){
   resize();
 }
 function status(text,error=false){const el=$('status');el.textContent=text;el.className='status '+(error?'error':'ok');}
-function markBusy(on){for(const id of ['copy-reviewed','attach','remove-attachment','attachment-select','extracted-text','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
+function markBusy(on){for(const id of ['copy-reviewed','attach','record-voice','remove-attachment','attachment-select','extracted-text','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
 function makeChoice(e){
   const box=document.createElement('div');box.className='choice';
   const heading=document.createElement('div');heading.className='choice-header';
@@ -252,14 +252,14 @@ async function initComposer(){
     if(documentLoading){status('Wait for document reading or cancel it before adding files.',true);return;}
     const controller=new AbortController();documentController=controller;
     invalidateDraft();documentLoading=true;
-    for(const id of ['attach','remove-attachment','attachment-select','extracted-text','send','protection-toggle'])$(id).disabled=true;
+    for(const id of ['attach','record-voice','remove-attachment','attachment-select','extracted-text','send','protection-toggle'])$(id).disabled=true;
     $('cancel-document').hidden=false;
     $('attachment-info').hidden=false;resize();
     try{
       const added=await IncognixAttachments.readBatch(files,attachments,{
         signal:controller.signal,draft:$('draft').value,
-        onProgress:(index,total,p)=>{if(controller===documentController&&!controller.signal.aborted)$('attachment-info').textContent=`Reading file ${index+1} of ${total} locally…${p===null?'':' '+p+'%'}`;},
-        read:async(file,options)=> /\.(png|jpe?g)$/i.test(file.name)?(await import('./image-text.mjs')).readImage(file,options):(await import('./documents.mjs')).readDocument(file,{...options,ocr:true})
+        onProgress:(index,total,p)=>{if(controller===documentController&&!controller.signal.aborted)$('attachment-info').textContent=`Reading file ${index+1} of ${total} locally…${p===null?'':typeof p==='number'?' '+p+'%':' '+p}`;},
+        read:async(file,options)=>(await import('./read-attachment.mjs')).readAttachment(file,options)
       });
       controller.signal.throwIfAborted();
       // The user may continue editing the prompt while extraction runs.
@@ -272,6 +272,21 @@ async function initComposer(){
       if(controller===documentController){documentLoading=false;documentController=null;$('cancel-document').hidden=true;$('attachment-file').value='';markBusy(false);resize();}
     }
   }
+  let stopRecording=null;
+  $('record-voice').addEventListener('click',async()=>{
+    if(stopRecording){stopRecording();return;}
+    if(busy||documentLoading||!protectionEnabled)return;
+    const controller=new AbortController();documentController=controller;documentLoading=true;
+    invalidateDraft();for(const id of ['attach','send','protection-toggle','remove-attachment','extracted-text','attachment-select'])$(id).disabled=true;
+    $('record-voice').disabled=true;$('cancel-document').hidden=false;$('cancel-document').textContent='Cancel recording';status('Allow the microphone to record locally.');
+    let file;
+    try{
+      const {recordVoice}=await import('./recording.mjs');
+      file=await recordVoice({signal:controller.signal,onReady:stop=>{stopRecording=stop;$('record-voice').disabled=false;$('record-voice').textContent='Stop recording';},onProgress:seconds=>status(`Recording locally · ${seconds}s / 120s`)});
+    }catch(e){status(controller.signal.aborted?'Recording cancelled.':`Recording unavailable: ${e.message} You can attach a recorded audio file.`,!controller.signal.aborted);}
+    finally{stopRecording=null;documentController=null;documentLoading=false;$('record-voice').disabled=false;$('record-voice').textContent='Record voice';$('cancel-document').hidden=true;$('cancel-document').textContent='Cancel reading';markBusy(false);resize();}
+    if(file&&!controller.signal.aborted)await loadAttachments([file]);
+  });
   $('attachment-file').addEventListener('change',()=>loadAttachments([...$('attachment-file').files]));
   const ingestFiles=(event,files)=>{
     if(!files.length)return;
