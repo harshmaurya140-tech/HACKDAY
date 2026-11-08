@@ -18,7 +18,8 @@ const fixtures=[
  ['Proxy-Authorization: Basic dXNlcjpwYXNz','dXNlcjpwYXNz'],
  ['authorization=basic YTpi','YTpi'],
  ['Authorization: Bearer '+ 'k'.repeat(800),'k'.repeat(800)],
- ['API_KEY="秘密の値🔒"','秘密の値🔒']
+ ['API_KEY="秘密の値🔒"','秘密の値🔒'],
+ ['password="prefix [PRIVATE_PERSON_1_ABCDEF] private suffix"','prefix [PRIVATE_PERSON_1_ABCDEF] private suffix']
 ];
 for(const [text,value] of fixtures){
  const entities=core.mergeDetected(text,[]);
@@ -35,6 +36,8 @@ for(const text of ['Explain password hashing and bearer authentication.','The be
  assert.equal(core.detectFormats(text).filter(e=>e.type==='SECRET').length,0,text);
 }
 const repeated=Array.from({length:30},()=> 'password: tiny').join('\n');
+const token='[PRIVATE_PERSON_1_ABCDEF]';
+assert.deepEqual(core.mergeDetected(token,[{text:token,start:0,end:token.length,type:'PERSON'}]),[],'Existing standalone placeholders are not tokenized again');
 const e=core.mergeDetected(repeated,[]),s=core.newSession();
 assert.equal(e.length,30);
 const masked=core.prepare(s,{text:repeated,entities:e}).sanitized_text;

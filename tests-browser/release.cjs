@@ -17,7 +17,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
  await page.locator('#analyze').waitFor();
 
  const credentials=await page.evaluate(()=>{
-  const values=['tiny','two words with spaces','synthetic.token/part+=','z'.repeat(750)];
+  const values=['tiny','two words [PRIVATE_PERSON_1_ABCDEF] with spaces','synthetic.token/part+=','z'.repeat(750)];
   const text=`password: ${values[0]}\napi_key="${values[1]}"\nAuthorization: Bearer ${values[2]}\naccess_token=${values[3]}`;
   const entities=PrivacyCore.mergeDetected(text,[]),session=PrivacyCore.newSession();
   const outgoing=PrivacyCore.prepare(session,{text,entities}).sanitized_text;

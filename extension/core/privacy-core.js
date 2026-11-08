@@ -54,7 +54,10 @@
       const candidate={start:e.start,end:e.end,text:value,type,necessary:e.necessary===true && canAskForDisclosure(type),
         reason:typeof e.reason==='string'?e.reason.slice(0,250):''};
       if(!validates(text,candidate))continue;
-      if (TOKEN.test(candidate.text)) { TOKEN.lastIndex=0; continue; }
+      // Ignore an existing placeholder only when it is the entire candidate.
+      // A token-shaped substring must not exempt surrounding private content.
+      const placeholder=candidate.text.match(/^\[PRIVATE_[A-Z]+_\d+_[0-9A-F]{6}\]$/);
+      if (placeholder) continue;
       TOKEN.lastIndex=0;
       proposed.push(candidate);
     }

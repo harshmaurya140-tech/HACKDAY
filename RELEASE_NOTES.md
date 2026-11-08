@@ -3,6 +3,7 @@
 - Protect explicitly labelled credentials regardless of length: short passwords/API keys are no longer skipped.
 - Protect complete quoted secrets, including spaces and escaped quotes; remove the 500-character truncation that could expose a secret suffix.
 - Recognize Bearer and Basic authorization header values, including JSON and curl-style quoted headers. Credentials remain non-disclosable through the review controls.
+- A placeholder-shaped substring no longer exempts surrounding private content from masking; exact standalone placeholders remain unchanged.
 - Empty values and line breaks do not consume the next line. Plain discussions of password hashing and bearer authentication are counter-tested.
 - Expand the actual bundled NER/rules evaluation from eight to fourteen cases. The five new credential cases are mandatory regression gates; known contextual misses remain reported honestly.
 - No new permissions, model downloads, or website-specific behavior changes. Existing compatibility and modality limitations remain.

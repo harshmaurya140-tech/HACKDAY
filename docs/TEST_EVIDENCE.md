@@ -159,7 +159,7 @@ Signed-in 0.10.0 Claude two-text-file acceptance also passed: real local analysi
 
 ## November 8 — 0.10.1 credential regression checks
 
-- Syntax checks and the complete JavaScript suite passed, including short/quoted/escaped/long credential values, 30 repeated assignments, authorization headers, exact round trips and blocked credential disclosure.
+- Syntax checks and the complete JavaScript suite passed, including short/quoted/escaped/long credential values, 30 repeated assignments, embedded placeholder-shaped substrings, authorization headers, exact round trips and blocked credential disclosure.
 - The installed-extension browser suite passed, including a new credential masking/restoration check and existing model, OCR, document, review, cancellation and provider fixture checks.
 - The real NER/rules evaluation passed all five mandatory new credential cases (14 total cases, one known codename miss and one known public-heading over-mask). Contextual inference is excluded from that evaluation.
 - These are automated checks, not a new signed-in acceptance result. The November 7 Claude acceptance remains evidence for 0.10.0 only.
