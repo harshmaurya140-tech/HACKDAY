@@ -163,3 +163,5 @@ Signed-in 0.10.0 Claude two-text-file acceptance also passed: real local analysi
 - The installed-extension browser suite passed, including a new credential masking/restoration check and existing model, OCR, document, review, cancellation and provider fixture checks.
 - The real NER/rules evaluation passed all five mandatory new credential cases (14 total cases, one known codename miss and one known public-heading over-mask). Contextual inference is excluded from that evaluation.
 - These are automated checks, not a new signed-in acceptance result. The November 7 Claude acceptance remains evidence for 0.10.0 only.
+
+Final 0.10.1 code `9a3d82c`: [clean CI passed](https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/42455105759). Fresh-profile extracted-ZIP browser suite also passed; extension SHA-256 `b60e36ba550ccaf60e1a11a6137854945d9e738dbfb66ed6d80954fbf5e568ef`.

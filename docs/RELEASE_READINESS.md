@@ -27,7 +27,7 @@ Status: development prerelease. Do not label this build universally compatible o
 | Copy controls | Reviewed-copy and private-response copy implemented | 0.9.6 passes isolated clipboard/policy tests and signed-in Claude copy/paste round trip. 0.9.10 signed-in Claude native clipboard round trip passed November 4. Other hosts and streaming tests remain; Claude 0.9.7 restored rendering and copy/paste passed signed-in retest November 3 |
 | Recovery | Draft preservation and explicit failures | 0.9.10 Claude same-tab refresh and cancellation draft retention passed November 4. Crash, browser restart, extension upgrade and model download interruption matrix remains |
 | Accessibility | Focus styles and responsive controls | Keyboard-only and screen-reader acceptance across supported providers |
-| Distribution | Reproducible ZIPs and pinned assets | Remote CI green for 0.10.0 code at 4e4ed97; extracted 0.10.0 ZIP passed the complete fresh-profile browser suite. Additional clean-install checks on supported Chrome/hardware, store policy/privacy disclosures and licensing review remain |
+| Distribution | Reproducible ZIPs and pinned assets | Remote CI green for 0.10.1 code at 9a3d82c; extracted 0.10.1 ZIP passed the complete fresh-profile browser suite. Additional clean-install checks on supported Chrome/hardware, store policy/privacy disclosures and licensing review remain |
 | Security | Isolation and consent tests | Independent review of bridge authorization, page spoofing, hostile documents and data retention |
 
 ## Shipping scope

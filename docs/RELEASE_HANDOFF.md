@@ -32,9 +32,15 @@ Clean CI: https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/4237297118
 
 Final extracted extension ZIP passed the full browser suite in a fresh Chromium profile. SHA-256: `3b0483b2b8db1d282e76614b4f0c25e9018284ce0590053a6168eba73aaea3c1`. Actual NER, English OCR and document processing run in these checks; provider fixtures mock contextual inference. Signed-in Claude two-file extraction, reviewed masked send, prompt/reply restoration and actual clipboard round trip passed November 7. The model also over-masked a harmless meeting topic. Detailed results are recorded in LIVE_TEST_CHECKPOINT.md.
 
-## 0.10.1 package
+## 0.10.1 verification and package
 
-Extension SHA-256: `d904ac884baceb2eb684ecea9a15f6218e986a184044895c9c2cc0086569b090`.
+Final code commit: `9a3d82cab686199f92681f2f7b08981b95bc8502`.
+[Clean GitHub CI passed](https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/42455105759) including browser tests, real NER/rules evaluation, packaging and artifact upload. The final extracted ZIP also passed the complete browser suite in a fresh local Chromium profile. Provider fixtures mock contextual inference; NER/OCR/document processing use actual bundled assets.
+
+The final guard additionally protects private values containing placeholder-shaped substrings; only standalone placeholders are exempt from repeat tokenization.
+
+
+Extension SHA-256: `b60e36ba550ccaf60e1a11a6137854945d9e738dbfb66ed6d80954fbf5e568ef`.
 
 ## Honest release boundary
 
