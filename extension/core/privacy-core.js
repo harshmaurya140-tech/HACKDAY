@@ -142,7 +142,29 @@
       for(const c of reordered){for(const digit of /[A-Z]/.test(c)?String(c.charCodeAt(0)-55):c)remainder=(remainder*10+Number(digit))%97;}
       if(remainder===1)add('ACCOUNT',m[0],m.index);
     }
-    for(const m of text.matchAll(/\b(?:password|passwd|api[_ -]?key|secret|access[_ -]?token|bearer)["']?\s*(?:is|[:=])\s*["']?([^\s"',;]{8,500})/gi))add('SECRET',m[1],m.index+m[0].lastIndexOf(m[1]));
+    // A labelled credential is private regardless of length or entropy. Read
+    // quoted values in full (including escaped quotes/spaces), without the old
+    // 500-character prefix cutoff. Never consume a following line as its value.
+    const secretLabel=/\b(?:password|passwd|api[_ -]?key|secret|access[_ -]?token|bearer)\b["']?[ \t]*(?:is\b|[:=])[ \t]*/gi;
+    for(const m of text.matchAll(secretLabel)){
+      let start=m.index+m[0].length,end=start;
+      const quote=text[start];
+      if(quote==='"'||quote==="'"){
+        start++;end=start;
+        while(end<text.length && text[end]!=='\n' && text[end]!=='\r'){
+          if(text[end]===quote)break;
+          if(text[end]==='\\' && end+1<text.length && !/[\r\n]/.test(text[end+1]))end+=2;
+          else end++;
+        }
+      }else{
+        const value=text.slice(start).match(/^[^\s"',;}\]]+/u);
+        if(value)end=start+value[0].length;
+      }
+      if(end>start)add('SECRET',text.slice(start,end),start);
+    }
+    // Standard HTTP authorization syntax has whitespace after the scheme,
+    // unlike a labelled assignment. Require the header to avoid prose matches.
+    for(const m of text.matchAll(/\b(?:proxy-)?authorization\b["']?[ \t]*[:=][ \t]*["']?(?:Bearer|Basic)[ \t]+([A-Za-z0-9._~+\/-]+=*)/gi))add('SECRET',m[1],m.index+m[0].lastIndexOf(m[1]));
     for(const m of text.matchAll(/\b(?:cvv|pin|otp)["']?\s*(?:is|[:=])\s*["']?(\d{3,8})\b/gi))add('SECRET',m[1],m.index+m[0].lastIndexOf(m[1]));
     for(const m of text.matchAll(/-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z]+ )?PRIVATE KEY-----/g))add('SECRET',m[0],m.index);
     return findings;

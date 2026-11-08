@@ -11,7 +11,13 @@ const cases=[
  {id:'identity',text:'My PAN is ABCDE1234F and my Aadhaar number is 2345 6789 0123.',private:['ABCDE1234F','2345 6789 0123'],public:[]},
  {id:'plain-task',text:'Explain binary search. Use three bullet points and end with Best regards.',private:[],public:['Explain binary search. Use three bullet points and end with Best regards.']},
  {id:'secret-codename',text:'Our confidential project code name is Best regards. Do not disclose it.',private:['Best regards'],public:[]},
- {id:'age-task',text:'My date of birth is 15 March 2002. Calculate my age as of 28 October 2026.',private:['15 March 2002'],public:['28 October 2026']}
+ {id:'age-task',text:'My date of birth is 15 March 2002. Calculate my age as of 28 October 2026.',private:['15 March 2002'],public:['28 October 2026']},
+ {id:'short-password',text:'Debug this configuration: password=abc123',private:['abc123'],public:[],required:true},
+ {id:'quoted-secret',text:'api_key="two words, with punctuation; and spaces"',private:['two words, with punctuation; and spaces'],public:[],required:true},
+ {id:'http-bearer',text:'Authorization: Bearer synthetic.token/part+=',private:['synthetic.token/part+='],public:[],required:true},
+ {id:'http-basic',text:'Proxy-Authorization: Basic dXNlcjpwYXNz',private:['dXNlcjpwYXNz'],public:[],required:true},
+ {id:'long-secret',text:'access_token='+ 'z'.repeat(750),private:['z'.repeat(750)],public:[],required:true},
+ {id:'credential-instructions',text:'Explain password hashing and bearer authentication.',private:[],public:['Explain password hashing and bearer authentication.']}
 ];
 (async()=>{
  const ext=path.resolve(process.env.INCOGNIX_EXTENSION||'extension');
@@ -33,6 +39,10 @@ const cases=[
     return {id:f.id,remainingPrivateValuesInPreparedText:f.private.filter(v=>outgoing.includes(v)),ner:ner.map(e=>({text:e.text,type:e.type})),missed:f.private.filter(v=>!ranges(v).every(([a,b])=>covered(a,b))),overmasked:f.public.filter(v=>ranges(v).some(([a,b])=>entities.some(e=>e.start<b&&e.end>a))),roundTrip:PrivacyCore.restore(session,outgoing).text.split('\n\n[Incognix local calculation]')[0]===f.text};
    },fixture);
    assert(result.roundTrip,`${fixture.id}: masking must restore the exact original`);
+   if(fixture.required){
+    assert.deepEqual(result.missed,[],`${fixture.id}: credential detection regression`);
+    assert.deepEqual(result.remainingPrivateValuesInPreparedText,[],`${fixture.id}: raw credential remains`);
+   }
    results.push(result);
   }
   const report={scope:'Bundled BERT NER plus deterministic rules; Chrome contextual model excluded',version:JSON.parse(fs.readFileSync(path.join(ext,'manifest.json'))).version,cases:results.length,missedDetectionFields:results.reduce((n,r)=>n+r.missed.length,0),overmaskedPublicSegments:results.reduce((n,r)=>n+r.overmasked.length,0),results};

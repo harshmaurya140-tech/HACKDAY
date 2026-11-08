@@ -156,3 +156,10 @@ Final review found a twelve-occurrence cutoff in contextual span matching. Remov
 Final 0.10.0 extracted ZIP passed the complete fresh-profile browser suite after the repeated-value fix. Extension SHA-256: `3b0483b2b8db1d282e76614b4f0c25e9018284ce0590053a6168eba73aaea3c1`. Clean GitHub CI passed at `4e4ed9778dd597b1eddab7022298e06a53b10b92`: https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/42372971182 .
 
 Signed-in 0.10.0 Claude two-text-file acceptance also passed: real local analysis, shared name token across files, masked email, reviewed send, restored prompt/answer and native clipboard round trip. See LIVE_TEST_CHECKPOINT.md for the remaining harmless-topic over-masking and attachment loss on reload.
+
+## November 8 — 0.10.1 credential regression checks
+
+- Syntax checks and the complete JavaScript suite passed, including short/quoted/escaped/long credential values, 30 repeated assignments, authorization headers, exact round trips and blocked credential disclosure.
+- The installed-extension browser suite passed, including a new credential masking/restoration check and existing model, OCR, document, review, cancellation and provider fixture checks.
+- The real NER/rules evaluation passed all five mandatory new credential cases (14 total cases, one known codename miss and one known public-heading over-mask). Contextual inference is excluded from that evaluation.
+- These are automated checks, not a new signed-in acceptance result. The November 7 Claude acceptance remains evidence for 0.10.0 only.

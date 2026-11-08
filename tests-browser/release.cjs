@@ -16,6 +16,16 @@ const assert=require('node:assert/strict'),path=require('node:path'),fs=require(
  await page.goto(origin+'/private/workspace.html');
  await page.locator('#analyze').waitFor();
 
+ const credentials=await page.evaluate(()=>{
+  const values=['tiny','two words with spaces','synthetic.token/part+=','z'.repeat(750)];
+  const text=`password: ${values[0]}\napi_key="${values[1]}"\nAuthorization: Bearer ${values[2]}\naccess_token=${values[3]}`;
+  const entities=PrivacyCore.mergeDetected(text,[]),session=PrivacyCore.newSession();
+  const outgoing=PrivacyCore.prepare(session,{text,entities}).sanitized_text;
+  return {hidden:values.every(v=>!outgoing.includes(v)),count:entities.length,restored:PrivacyCore.restore(session,outgoing).text===text,locked:entities.every(e=>!PrivacyCore.canAskForDisclosure(e.type))};
+ });
+ assert.deepEqual(credentials,{hidden:true,count:4,restored:true,locked:true});
+ console.log('PASS installed-extension short, quoted, HTTP and long credentials remain hidden and restore exactly');
+
  const rejectedDocuments=await page.evaluate(async()=>{
   const {readDocument}=await import('./documents.mjs');
   const blank=await PDFLib.PDFDocument.create();blank.addPage();

@@ -1,3 +1,12 @@
+# 0.10.1 development prerelease — November 8
+
+- Protect explicitly labelled credentials regardless of length: short passwords/API keys are no longer skipped.
+- Protect complete quoted secrets, including spaces and escaped quotes; remove the 500-character truncation that could expose a secret suffix.
+- Recognize Bearer and Basic authorization header values, including JSON and curl-style quoted headers. Credentials remain non-disclosable through the review controls.
+- Empty values and line breaks do not consume the next line. Plain discussions of password hashing and bearer authentication are counter-tested.
+- Expand the actual bundled NER/rules evaluation from eight to fourteen cases. The five new credential cases are mandatory regression gates; known contextual misses remain reported honestly.
+- No new permissions, model downloads, or website-specific behavior changes. Existing compatibility and modality limitations remain.
+
 # 0.10.0 development prerelease — November 7
 
 - Multiple attachments in the private composer: select, paste or drop up to five PDF/TXT/MD/CSV/PNG/JPEG files, within 8 MB per file, 24 MB total and 12,000 combined prompt/extraction characters.

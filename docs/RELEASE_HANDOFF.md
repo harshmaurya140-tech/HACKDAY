@@ -1,14 +1,21 @@
-# Incognix 0.10.0 handoff — November 7, 2026
+# Incognix 0.10.1 handoff — November 8, 2026
 
 ## Use the tested build
 
 The authoritative checkout is `/Users/divytandon1813/Developer/HackDay/incognix`, branch `codex/incognix-release`. Existing installations should keep loading its `extension` folder. The old iCloud copy is not the release source.
 
-For another computer, extract `dist/incognix-0.10.0-extension.zip` into a permanent folder and Load unpacked the folder containing manifest.json. No Node, Python, API key, server or separate desktop application is needed by the user. Chrome's on-device model must be available; Chrome may download it. Follow INSTALLATION.md.
+For another computer, extract `dist/incognix-0.10.1-extension.zip` into a permanent folder and Load unpacked the folder containing manifest.json. No Node, Python, API key, server or separate desktop application is needed by the user. Chrome's on-device model must be available; Chrome may download it. Follow INSTALLATION.md.
 
 Use the protected textbox, add supported files, review extracted text and the exact outgoing preview, then Send reviewed text. On other HTTPS chatbots, use the toolbar popup to enable the site and choose its input if needed. If no supported editor/send control is found, use explicit reviewed copy; do not assume an unchanged native textbox is protected.
 
-## Completed in this update
+## Completed in 0.10.1
+
+- Short labelled passwords and API keys are protected, as are full quoted secrets with spaces/escaped quotes and long credentials beyond the former 500-character cutoff.
+- Bearer/Basic authorization headers are recognized. Exact credential disclosure remains blocked.
+- Five mandatory credential regressions added to the actual NER/rules evaluation (14 total cases). All pass; prior contextual misses/over-masking remain.
+- Syntax, complete JavaScript, installed-extension browser and actual NER evaluation checks passed. No new signed-in test of 0.10.1 is claimed.
+
+## Completed in 0.10.0
 
 - Up to five attachments, sequential local processing, 8 MB per file / 24 MB total.
 - Editable extraction per file, individual removal and cancellation.
@@ -17,13 +24,17 @@ Use the protected textbox, add supported files, review extracted text and the ex
 - Every occurrence of a contextually detected private value is matched; no twelve-occurrence cutoff.
 - Image decode-buffer cleanup, corrected installation/build instructions and visible popup version.
 
-## Verification
+## Prior 0.10.0 verification
 
 Code commit: `4e4ed9778dd597b1eddab7022298e06a53b10b92`.
 
 Clean CI: https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/42372971182 — passed installation, pinned assets, build, syntax, JavaScript tests, browser tests, detector evaluation and packaging.
 
 Final extracted extension ZIP passed the full browser suite in a fresh Chromium profile. SHA-256: `3b0483b2b8db1d282e76614b4f0c25e9018284ce0590053a6168eba73aaea3c1`. Actual NER, English OCR and document processing run in these checks; provider fixtures mock contextual inference. Signed-in Claude two-file extraction, reviewed masked send, prompt/reply restoration and actual clipboard round trip passed November 7. The model also over-masked a harmless meeting topic. Detailed results are recorded in LIVE_TEST_CHECKPOINT.md.
+
+## 0.10.1 package
+
+Extension SHA-256: `d904ac884baceb2eb684ecea9a15f6218e986a184044895c9c2cc0086569b090`.
 
 ## Honest release boundary
 
