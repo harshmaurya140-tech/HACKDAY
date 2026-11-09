@@ -48,6 +48,17 @@ async function getSession(sessionId){return (await chrome.storage.session.get(SE
 async function putSession(sessionId,s){await chrome.storage.session.set({[SESS(sessionId)]:s});}
 async function handle(msg,sender){
   if(!msg||typeof msg!=='object')throw Error('Invalid extension request');
+  // Recorder jobs are extension-only, bound to a composer and a single recorder tab.
+  if(msg.type==='RECORDER_FINISH'){
+    const key='incognix-recording:'+String(msg.token);
+    const job=(await chrome.storage.session.get(key))[key];
+    const expected=chrome.runtime.getURL('private/recorder.html')+'?token='+msg.token;
+    if(!job||job.expires<Date.now()||sender.url!==expected||sender.tab?.id!==job.recorderTab)throw Error('Recording session expired or untrusted');
+    if(job.done)throw Error('Recording already returned');
+    if(typeof msg.text!=='string'||msg.text.length>12000)throw Error('Invalid recording transcript');
+    await chrome.storage.session.set({[key]:{...job,done:true,text:msg.text}});
+    return {ok:true};
+  }
   if(msg.type==='REGISTER_TAB'){
     if(!sender.tab||!await allowed(sender.url||sender.tab.url))throw Error('Untrusted registration');
     if(!/^[a-f0-9-]{36}$/.test(msg.bridge||''))throw Error('Invalid channel');
@@ -97,6 +108,34 @@ async function handle(msg,sender){
   if(msg.type==='HEALTH')return {ok:true,mode:'extension-only',detector:'Bundled BERT NER and Chrome contextual AI'};
   const entry=await channel(msg.bridge,sender);
   const sessionId=entry.sessionId;
+  if(msg.type==='OPEN_RECORDER'){
+    if(new URL(sender.url).searchParams.get('mode')!=='composer')throw Error('Only the composer can record');
+    const all=await chrome.storage.session.get(null);
+    await chrome.storage.session.remove(Object.entries(all).filter(([k,v])=>k.startsWith('incognix-recording:')&&v.expires<Date.now()).map(([k])=>k));
+    const token=crypto.randomUUID(),key='incognix-recording:'+token;
+    const tab=await chrome.tabs.create({url:chrome.runtime.getURL('private/recorder.html')+'?token='+token,active:true});
+    await chrome.storage.session.set({[key]:{bridge:msg.bridge,tabId:entry.tabId,recorderTab:tab.id,expires:Date.now()+10*60*1000,done:false}});
+    return {ok:true,token};
+  }
+  if(msg.type==='POLL_RECORDER'||msg.type==='CANCEL_RECORDER'||msg.type==='ACK_RECORDER'){
+    const key='incognix-recording:'+String(msg.token),job=(await chrome.storage.session.get(key))[key];
+    if(!job||job.bridge!==msg.bridge||job.tabId!==entry.tabId)throw Error('Recording session missing');
+    if(msg.type==='CANCEL_RECORDER'||job.expires<Date.now()){
+      await chrome.storage.session.remove(key);await chrome.tabs.remove(job.recorderTab).catch(()=>{});
+      return {ok:true,done:true,cancelled:true};
+    }
+    if(msg.type==='ACK_RECORDER'){
+      if(!job.done)throw Error('Recording not ready');
+      await chrome.storage.session.remove(key);
+      await chrome.tabs.update(entry.tabId,{active:true}).catch(()=>{});
+      await chrome.tabs.remove(job.recorderTab).catch(()=>{});
+      return {ok:true};
+    }
+    if(job.done)return {ok:true,done:true,text:job.text};
+    try{await chrome.tabs.get(job.recorderTab);}catch{await chrome.storage.session.remove(key);return {ok:true,done:true,cancelled:true};}
+    return {ok:true,done:false};
+  }
+
   if(msg.type==='ANALYZE'){
     if(typeof msg.text!=='string'||msg.text.length>12000)throw Error('Draft is too long');
     if(!Array.isArray(msg.entities))throw Error('Model result missing; sending blocked');
@@ -207,6 +246,7 @@ if(chrome.tabs?.onRemoved?.addListener){
       const sessions=new Set();
       const keys=[];
       for(const [key,value] of Object.entries(all)){
+        if(key.startsWith('incognix-recording:')&&(value?.tabId===tabId||value?.recorderTab===tabId))keys.push(key);
         if(key.startsWith(`ps-editor:${tabId}:`))keys.push(key);
         if(key.startsWith(`ps-conversation:${tabId}:`)){
           keys.push(key);if(typeof value==='string')sessions.add(value);

@@ -13,7 +13,7 @@ const core=require('../extension/core/privacy-core.js');
 const chrome={
  runtime:{getURL:path=>'chrome-extension://fakeid/'+String(path).replace(/^\//,''),onMessage:{addListener:cb=>handler=cb}},
  storage:{session:{
-  async get(keys){const list=Array.isArray(keys)?keys:[keys];return Object.fromEntries(list.map(k=>[k,store.get(k)]));},
+  async get(keys){if(keys===null)return Object.fromEntries(store);const list=Array.isArray(keys)?keys:[keys];return Object.fromEntries(list.map(k=>[k,store.get(k)]));},
   async set(obj){for(const [k,v] of Object.entries(obj))store.set(k,v);},
   async remove(keys){for(const k of Array.isArray(keys)?keys:[keys])store.delete(k);}
  }},
@@ -28,6 +28,19 @@ async function call(m,from){return new Promise(resolve=>handler(m,from,resolve))
  const trusted={tab:{id:43},url:privateUrl};
  const reg=await call({type:'REGISTER_TAB',bridge},{tab:{id:43},url:'https://claude.ai/chat/123'});
  assert.equal(reg.ok,true);
+ chrome.tabs.create=async()=>({id:90});chrome.tabs.remove=async()=>{};chrome.tabs.update=async()=>{};
+ const opened=await call({type:'OPEN_RECORDER',bridge},trusted);assert.equal(opened.ok,true);
+ const recorder={tab:{id:90},url:chrome.runtime.getURL('private/recorder.html')+'?token='+opened.token};
+ assert.equal((await call({type:'RECORDER_FINISH',token:opened.token,text:'secret'},{...recorder,tab:{id:91}})).ok,false,'recorder result bound to exact tab');
+ assert.equal((await call({type:'RECORDER_FINISH',token:opened.token,text:'secret'},{...recorder,url:'https://claude.ai/'})).ok,false,'host cannot write recording');
+ assert.equal((await call({type:'RECORDER_FINISH',token:opened.token,text:'Synthetic transcript'},recorder)).ok,true);
+ assert.equal((await call({type:'RECORDER_FINISH',token:opened.token,text:'replay'},recorder)).ok,false);
+ const delivered=await call({type:'POLL_RECORDER',bridge,token:opened.token},trusted);assert.equal(delivered.text,'Synthetic transcript');
+ assert.equal((await call({type:'ACK_RECORDER',bridge,token:opened.token},trusted)).ok,true);
+ assert.equal((await call({type:'POLL_RECORDER',bridge,token:opened.token},trusted)).ok,false,'result consumed once after acknowledgment');
+ const cancelled=await call({type:'OPEN_RECORDER',bridge},trusted);
+ assert.equal((await call({type:'CANCEL_RECORDER',bridge,token:cancelled.token},trusted)).ok,true);
+ assert.equal(store.has('incognix-recording:'+cancelled.token),false);
  const prompt='My email is testing@example.com. Draft an introduction.';
  const start=prompt.indexOf('testing@example.com');
  const a=await call({type:'ANALYZE',bridge,text:prompt,entities:[{type:'EMAIL',text:'testing@example.com',start,end:start+19,necessary:false}]},trusted);

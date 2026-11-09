@@ -75,6 +75,29 @@ make('traversal.docx',{'../word/document.xml':'<x/>'})
   assert.equal(await host.evaluate(()=>window.delivered),undefined);await frame.locator('#confirm-send').click();await host.waitForFunction(()=>window.delivered);assert(!(await host.evaluate(()=>window.delivered)).includes('nora@example.org'));
   assert(!(await host.locator('body').textContent()).includes('nora@example.org'));await host.close();
   console.log('PASS actual composer microphone cancellation, combined Office/audio extraction, consent and masked handoff (contextual inference mocked)');
+  const blockedHost=await ctx.newPage();
+  await blockedHost.route('https://claude.ai/new',r=>r.fulfill({contentType:'text/html',headers:{'Permissions-Policy':'microphone=()'},body:'<form style="width:600px;margin:40px"><div class="ProseMirror" contenteditable="true" role="textbox" data-placeholder="Reply to Claude" style="height:90px"></div><button aria-label="Send message">Send</button></form>'}));
+  await blockedHost.goto('https://claude.ai/new');
+  const blocked=blockedHost.frameLocator('iframe[title="Protected AI composer"]');await blocked.locator('#draft').waitFor();
+  await blocked.locator('#draft').fill('Keep this private draft.');
+  const recorderPage=ctx.waitForEvent('page');await blocked.locator('#record-voice').click();const rec=await recorderPage;await rec.waitForLoadState();
+  assert(rec.url().includes('/private/recorder.html?token='),'policy denial opens extension recorder');
+  await rec.locator('#record').click();await rec.locator('#record').filter({hasText:'Stop recording'}).waitFor();
+  // Stop actual synthetic-device capture via cancellation; submit an edited transcript
+  // to test the authenticated return path separately from real ASR above.
+  await rec.evaluate(()=>{document.querySelector('#transcript').value='Synthetic returned voice transcript.';});
+  await rec.locator('#cancel').click();
+  await blocked.locator('#status').filter({hasText:'Recording cancelled'}).waitFor();
+  assert.equal(await blocked.locator('#draft').inputValue(),'Keep this private draft.');
+  const nextPage=ctx.waitForEvent('page');await blocked.locator('#record-voice').click();const rec2=await nextPage;await rec2.waitForLoadState();
+  await rec2.locator('#transcript').fill('Synthetic returned voice transcript.');await rec2.locator('#use').click();
+  await blocked.locator('#status').filter({hasText:'Documents ready'}).waitFor();
+  assert.equal(await blocked.locator('#draft').inputValue(),'Keep this private draft.');
+  assert.equal(await blocked.locator('#extracted-text').inputValue(),'Synthetic returned voice transcript.');
+  assert(!(await blockedHost.locator('body').textContent()).includes('Synthetic returned voice transcript.'));
+  await blockedHost.close();
+  console.log('PASS microphone-denying host fallback, actual recorder capture, cancellation and private transcript return without page disclosure');
+
 
  }finally{await ctx.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

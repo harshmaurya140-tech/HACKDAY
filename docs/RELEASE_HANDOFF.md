@@ -1,3 +1,13 @@
+# 0.11.1 update — November 9, 2026
+
+The microphone-denial recovery is implemented and passed the full local JavaScript and browser suites. Site policy denial opens an extension-owned recording tab; browser/OS permission is still needed. The transcript is returned privately only to its originating composer, with acknowledgement before disposal. Tested with a microphone-denying Claude fixture and real synthetic-device capture, not the user's physical microphone.
+
+Load/reload the same authoritative `extension` directory. The 0.11.0 evidence below remains historical; its ZIP hash does not identify 0.11.1. See `dist/SHA256SUMS` for the current package.
+
+This patch does not change the English speech model, duration limits, or add video visual understanding. Universal custom-editor compatibility and Web Store publication remain unachieved; no claim that all requested work is complete is made.
+
+---
+
 # Incognix 0.11.0 handoff — November 9, 2026
 
 ## Install and use

@@ -265,7 +265,7 @@ async function initComposer(){
       // The user may continue editing the prompt while extraction runs.
       if(IncognixAttachments.compose($('draft').value,[...attachments,...added]).length>12000)throw Error('Prompt and attachments exceed 12,000 characters. Shorten your draft or documents.');
       attachmentIndex=attachments.length;attachments.push(...added);renderAttachments();
-      $('attachment-review').open=true;status('Documents ready. Review extracted text before sharing.');
+      $('attachment-review').open=true;status('Documents ready. Review extracted text before sharing.');return true;
     }catch(e){
       renderAttachments();status(controller.signal.aborted?'Reading cancelled. Existing attachments are unchanged.':'Document not attached: '+e.message+' Existing attachments are unchanged.',!controller.signal.aborted);
     }finally{
@@ -279,13 +279,27 @@ async function initComposer(){
     const controller=new AbortController();documentController=controller;documentLoading=true;
     invalidateDraft();for(const id of ['attach','send','protection-toggle','remove-attachment','extracted-text','attachment-select'])$(id).disabled=true;
     $('record-voice').disabled=true;$('cancel-document').hidden=false;$('cancel-document').textContent='Cancel recording';status('Allow the microphone to record locally.');
-    let file;
+    let file,recorderToken;
     try{
       const {recordVoice}=await import('./recording.mjs');
       file=await recordVoice({signal:controller.signal,onReady:stop=>{stopRecording=stop;$('record-voice').disabled=false;$('record-voice').textContent='Stop recording';},onProgress:seconds=>status(`Recording locally · ${seconds}s / 120s`)});
-    }catch(e){status(controller.signal.aborted?'Recording cancelled.':`Recording unavailable: ${e.message} You can attach a recorded audio file.`,!controller.signal.aborted);}
+    }catch(e){
+      if(!controller.signal.aborted&&['NotAllowedError','SecurityError'].includes(e.name)){
+        let token;
+        try{
+          ({token}=await message({type:'OPEN_RECORDER'}));
+          status('Continue in the Incognix recording tab. Your private draft is retained.');
+          while(!controller.signal.aborted){
+            const result=await message({type:'POLL_RECORDER',token});
+            if(result.done){if(result.text){file=new File([result.text],'voice-transcript.txt',{type:'text/plain'});recorderToken=token;}else{await message({type:'ACK_RECORDER',token}).catch(()=>{});status('Recording cancelled. Your draft is retained.');}break;}
+            await new Promise(resolve=>setTimeout(resolve,750));
+          }
+        }catch(error){status('Could not complete recording: '+error.message,true);}
+        finally{if(token&&controller.signal.aborted)await message({type:'CANCEL_RECORDER',token}).catch(()=>{});}
+      }else status(controller.signal.aborted?'Recording cancelled.':`Recording unavailable: ${e.message} You can attach a recorded audio file.`,!controller.signal.aborted);
+    }
     finally{stopRecording=null;documentController=null;documentLoading=false;$('record-voice').disabled=false;$('record-voice').textContent='Record voice';$('cancel-document').hidden=true;$('cancel-document').textContent='Cancel reading';markBusy(false);resize();}
-    if(file&&!controller.signal.aborted)await loadAttachments([file]);
+    if(file&&!controller.signal.aborted){const added=await loadAttachments([file]);if(added&&recorderToken)await message({type:'ACK_RECORDER',token:recorderToken}).catch(()=>{});else if(recorderToken)status('Transcript remains in the recording tab. Shorten it there, then copy it into your draft.',true);}
   });
   $('attachment-file').addEventListener('change',()=>loadAttachments([...$('attachment-file').files]));
   const ingestFiles=(event,files)=>{

@@ -1,3 +1,10 @@
+## 0.11.1 — microphone permission recovery
+
+- Embedded microphone permission denial now opens an extension-owned recording tab. Browser/OS consent is still required.
+- Reviewed local transcripts return through a tab-bound, single-use session job. Raw audio and transcripts never pass through the website.
+- Drafts are retained; transcripts remain in the recorder when attachment import fails. The recorder closes only after successful import acknowledgement.
+- Tests cover microphone-denying hosts, synthetic-device capture, cancellation, transcript return, spoofed senders and replay.
+
 # 0.11.0 — Office, local speech and web-component integration
 
 - Add DOCX/XLSX/PPTX text extraction with bounded ZIP expansion, CRC checks, entity-declaration rejection, slide ordering and cached spreadsheet values. Never execute macros/formulas or fetch external relationships.

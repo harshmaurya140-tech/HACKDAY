@@ -177,3 +177,7 @@ Final 0.10.1 code `9a3d82c`: [clean CI passed](https://github.com/harshmaurya140
 - Installed extension inside an open shadow-root editor: private draft, masked send and local restored reply passed. Adapter tests cover nested shadow send controls and reply discovery. Closed roots/cross-origin frames are not claimed.
 
 Final 0.11.0 code `40b01f6`: [clean CI passed](https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/42479483863), including the full browser/multimodal suite and artifact upload. The extracted ZIP also passed locally with SHA-256 `9ccd2002f531ec2394deefe72d4d97557abe1a9978dbbc5e5688cdbf55107c7b`. Signed-in Claude DOCX+WAV extraction, real contextual analysis, reviewed masked send, restoration and clipboard round trip passed November 8; see LIVE_TEST_CHECKPOINT.md. The harmless phrase “Synthetic Office” was over-masked.
+
+## November 9 — 0.11.1 microphone recovery
+
+The installed-extension multimodal suite serves a Claude-shaped fixture with `Permissions-Policy: microphone=()`. Embedded recording is denied; the extension-owned tab captures a real synthetic microphone stream. Cancellation retains the private draft. An edited synthetic transcript returns as a private attachment and is absent from the host DOM. Existing real Whisper/Office/WebM cases passed in the targeted run. Background tests reject wrong-tab/host senders and replay, and require composer acknowledgement before result disposal. This is controlled Chromium evidence, not a claim that the user's macOS microphone consent has been granted.
