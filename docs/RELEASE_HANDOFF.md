@@ -1,49 +1,41 @@
-# Incognix 0.10.1 handoff — November 8, 2026
+# Incognix 0.11.0 handoff — November 9, 2026
 
-## Use the tested build
+## Install and use
 
-The authoritative checkout is `/Users/divytandon1813/Developer/HackDay/incognix`, branch `codex/incognix-release`. Existing installations should keep loading its `extension` folder. The old iCloud copy is not the release source.
+Authoritative project: `/Users/divytandon1813/Developer/HackDay/incognix`, branch `codex/incognix-release`. Keep the current installation loaded from its `extension` folder. The user already reloaded 0.11.0; no further reload is needed for this documentation handoff.
 
-For another computer, extract `dist/incognix-0.10.1-extension.zip` into a permanent folder and Load unpacked the folder containing manifest.json. No Node, Python, API key, server or separate desktop application is needed by the user. Chrome's on-device model must be available; Chrome may download it. Follow INSTALLATION.md.
+For another computer, extract `dist/incognix-0.11.0-extension.zip` and Load unpacked the folder containing `manifest.json`. No Node, Python, API key, server or separate application is required by the user. Chrome's on-device contextual model must be available; Chrome manages that download. NER, OCR and speech assets are bundled and pinned.
 
-Use the protected textbox, add supported files, review extracted text and the exact outgoing preview, then Send reviewed text. On other HTTPS chatbots, use the toolbar popup to enable the site and choose its input if needed. If no supported editor/send control is found, use explicit reviewed copy; do not assume an unchanged native textbox is protected.
+Use the protected composer, attach files or record voice, inspect/edit extracted text, review the exact outgoing preview, then Send reviewed text. Additional HTTPS chatbots can be enabled per site or across HTTPS sites in the popup; the input picker handles ambiguous discovery. An unchanged native editor is not protected. Reviewed copy remains available where a site cannot be integrated.
 
-## Completed in 0.10.1
+## Delivered functionality
 
-- Short labelled passwords and API keys are protected, as are full quoted secrets with spaces/escaped quotes and long credentials beyond the former 500-character cutoff.
-- Bearer/Basic authorization headers are recognized. Exact credential disclosure remains blocked.
-- Five mandatory credential regressions added to the actual NER/rules evaluation (14 total cases). All pass; prior contextual misses/over-masking remain.
-- Syntax, complete JavaScript, installed-extension browser and actual NER evaluation checks passed. No new signed-in test of 0.10.1 is claimed.
+- Private composer, ON/OFF, local entity/credential protection, confirmed preview/send and private response restoration/copy.
+- Five attachments, sequential extraction, per-file editing/removal, cancellation and atomic failed-batch retention.
+- PDF/text/image extraction, local English OCR, text exports and a separate visual raster-redaction tool.
+- DOCX text, XLSX shared/inline/raw cached cells and PPTX slide text in presentation order; bounded archives/XML, CRC validation, external relationships never fetched, macros/embedded packages rejected.
+- Bundled local English speech transcription for supported audio and audio-bearing MP4/WebM clips; explicit-click microphone recording with Stop/Cancel and track cleanup.
+- Open shadow-root input/reply discovery, nested generic send controls and streamed reply observation.
+- Branded extension icons, privacy and model provenance documentation, and Chrome Web Store listing/disclosure copy in STORE_LISTING.md.
 
-## Completed in 0.10.0
+## Verification
 
-- Up to five attachments, sequential local processing, 8 MB per file / 24 MB total.
-- Editable extraction per file, individual removal and cancellation.
-- Atomic new batches: failure/cancellation preserves existing attachments and edits.
-- Combined 12,000-character prompt/extraction budget checked again after concurrent prompt edits.
-- Every occurrence of a contextually detected private value is matched; no twelve-occurrence cutoff.
-- Image decode-buffer cleanup, corrected installation/build instructions and visible popup version.
+Runtime code commit: `40b01f66c222b7e573272ef917a6bb01dcc49ae6`.
 
-## Prior 0.10.0 verification
+[Clean GitHub CI passed](https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/42479483863): clean install, pinned assets, build, syntax, JavaScript suites, installed-extension/browser tests, detector evaluation, packaging and artifact upload.
 
-Code commit: `4e4ed9778dd597b1eddab7022298e06a53b10b92`.
+The extracted extension ZIP passed the complete browser suite in a fresh Chromium profile, including real Office parsing, Whisper inference, synthetic-device microphone capture, WebM audio decoding, cancellation, and the existing NER/OCR/document/privacy checks. Provider fixtures mock contextual inference; these are not claims of live acceptance on every provider.
 
-Clean CI: https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/42372971182 — passed installation, pinned assets, build, syntax, JavaScript tests, browser tests, detector evaluation and packaging.
+Extension ZIP SHA-256: `9ccd2002f531ec2394deefe72d4d97557abe1a9978dbbc5e5688cdbf55107c7b`.
 
-Final extracted extension ZIP passed the full browser suite in a fresh Chromium profile. SHA-256: `3b0483b2b8db1d282e76614b4f0c25e9018284ce0590053a6168eba73aaea3c1`. Actual NER, English OCR and document processing run in these checks; provider fixtures mock contextual inference. Signed-in Claude two-file extraction, reviewed masked send, prompt/reply restoration and actual clipboard round trip passed November 7. The model also over-masked a harmless meeting topic. Detailed results are recorded in LIVE_TEST_CHECKPOINT.md.
+Signed-in Claude acceptance on November 8: DOCX plus WAV attached through the private composer; Word text and speech transcript read correctly; the real Chrome contextual model produced a masked preview; confirmed send succeeded; name/email restored in prompt and reply; restored-copy/paste round trip passed. Synthetic clipboard-check text was cleared without resending. Screenshot: `artifacts/live-0.11.0-office-audio.png`.
 
-## 0.10.1 verification and package
+The real model over-masked the harmless phrase “Synthetic Office”. This does not establish perfect recognition. Existing restricted BERT/rules evaluation still reports the known confidential-codename miss and public-heading over-mask.
 
-Final code commit: `9a3d82cab686199f92681f2f7b08981b95bc8502`.
-[Clean GitHub CI passed](https://github.com/harshmaurya140-tech/HACKDAY/actions/runs/42455105759) including browser tests, real NER/rules evaluation, packaging and artifact upload. The final extracted ZIP also passed the complete browser suite in a fresh local Chromium profile. Provider fixtures mock contextual inference; NER/OCR/document processing use actual bundled assets.
+## Exact support boundary
 
-The final guard additionally protects private values containing placeholder-shaped substrings; only standalone placeholders are exempt from repeat tokenization.
+Five files, 8 MB each / 24 MB total, 12,000 combined composer characters. Media is English speech, up to two minutes, with a three-minute processing deadline and Chrome codec requirements. Video frames are not analyzed; Office images/charts/layout and embedded objects are omitted. Spreadsheet values are raw/cached, not recalculated. Microphone capture depends on Chrome permission and the embedding site's policy; file transcription is available when recording is denied.
 
+Closed shadow roots, cross-origin embedded editors and arbitrary custom controls cannot be universally integrated. Generic activation is best effort, not a browser-wide firewall. Detection/transcription remain fallible. Attachments are memory-only and disappear on refresh; session mappings are not durable backups.
 
-Extension SHA-256: `b60e36ba550ccaf60e1a11a6137854945d9e738dbfb66ed6d80954fbf5e568ef`.
-
-## Honest release boundary
-
-This is an installable development prerelease, not a zero-bug or universal-compatibility promise. Core text workflows have selected live evidence; generic websites remain best effort. Known detector misses/over-masking are documented in DETECTION_EVALUATION.md. OCR extracts English text, not arbitrary visual meaning. Office files, voice/video, multilingual OCR and universal native-upload interception are not implemented. Attachments remain in frame memory and disappear on refresh; drafts/mappings are session-scoped, not durable backups.
-
-Independent security assessment and Chrome Web Store submission/approval remain separate release gates. No store listing, public release or merge was performed. See RELEASE_READINESS.md for the full boundary.
+Chrome Web Store publication has not occurred. A publisher account, real support contact, hosted privacy-policy URL and Google review are external distribution steps. An independent security audit cannot be replaced by this implementation's own automated checks. No universal-compatibility, zero-bug or independent-audit claim is made.

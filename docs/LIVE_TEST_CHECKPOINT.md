@@ -171,3 +171,11 @@ Actual local analysis completed. Kept all disclosure choices hidden. The outgoin
 Explicitly sent only after inspecting the preview. Claude accepted the masked message. Private frames restored the full prompt and answer: “Hello Nora Vale, I’m reaching out at nora.test@example.org to follow up on our meeting about paper airplanes.” Copy restored text followed by native paste into the empty private composer reproduced the answer exactly. Cleared only the synthetic pasted draft without sending it. Screenshot saved locally as `artifacts/live-0.10.0-multifile.png` (ignored, not published).
 
 PASS for signed-in two-file extraction/selection, real local analysis, consistent repeated-value masking, reviewed delivery, prompt/answer restoration and actual clipboard round trip. This does not establish every format combination, post-refresh attachment recovery, all providers or general image understanding.
+
+## November 8 — signed-in Claude 0.11.0 Office + audio acceptance
+
+Chrome displayed Incognix 0.11.0 enabled. A fresh synthetic conversation attached `sample.docx` (Nora Vale / nora@example.org plus a header) and `speech.wav` through the extension's native file picker. The Word body/header and the exact synthetic speech sentence were visible in editable private extracts. Real on-device contextual analysis produced a preview with PERSON/EMAIL tokens and an additional OTHER token for the harmless phrase “Synthetic Office” (known over-masking; not hidden from the report).
+
+After inspection, Send reviewed text delivered the tokenized prompt to Claude. Incognix restored the user prompt and the reply: “Hello Nora Vale, it’s nice to connect with you at nora@example.org, and I understand from your note that this is a local privacy test and you’d like your information kept private.” Copy restored text pasted that result into the private composer; the synthetic check draft was then cleared without sending. Screenshot: `artifacts/live-0.11.0-office-audio.png`.
+
+This is live DOCX/WAV acceptance on Claude, not a human microphone recording test or a live acceptance matrix for every format/provider. Microphone/WebM/other Office-format evidence is in the isolated Chromium tests.
