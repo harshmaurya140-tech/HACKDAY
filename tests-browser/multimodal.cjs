@@ -39,13 +39,28 @@ make('traversal.docx',{'../word/document.xml':'<x/>'})
   console.log('PASS actual DOCX/XLSX/PPTX extraction, ordering, header/cached values, hostile archives and cancellation');
   const rejectedMedia=await p.evaluate(async()=>{
    const {readMedia}=await import('./media-text.mjs'),{wavFile}=await import('./recording.mjs');let count=0;
-   const silent=wavFile([new Float32Array(16000)],16000),long=wavFile([new Float32Array(121*16000)],121*16000);
+   const silent=wavFile([new Float32Array(16000)],16000),long=wavFile([new Float32Array(601*16000)],601*16000);
    for(const file of [silent,long,new File(['not audio'],'broken.mp3')])try{await readMedia(file);}catch{count++;}
    return count;
   });assert.equal(rejectedMedia,3,'silent, over-duration and malformed media rejected');
+  const longAdmission=await p.evaluate(async()=>{
+   const {readMedia}=await import('./media-text.mjs'),{wavFile}=await import('./recording.mjs');
+   const audio=new Float32Array(130*16000),controller=new AbortController();let admitted=false;
+   try{await readMedia(wavFile([audio],audio.length),{signal:controller.signal,onProgress:()=>{admitted=true;controller.abort();}});}catch{}
+   let badLanguage=false;try{await readMedia(wavFile([new Float32Array(16000)],16000),{language:'not-a-language'});}catch(e){badLanguage=/language/.test(e.message);}
+   return {admitted,badLanguage};
+  });assert(longAdmission.admitted&&longAdmission.badLanguage,'longer-than-two-minute metadata accepted and unsupported language rejected');
   const bytes=[...fs.readFileSync(path.join(__dirname,'fixtures/speech.wav'))];
   const speech=await p.evaluate(async bytes=>{const {readMedia}=await import('./media-text.mjs');return readMedia(new File([new Uint8Array(bytes)],'voice.wav'));},bytes);
   console.log('Actual speech result:',speech.text);assert(/privacy|private/i.test(speech.text)&&/test/i.test(speech.text),'Actual bundled speech must transcribe the synthetic fixture');
+  for(const [language,file,expected] of [['es','speech-es.wav',/privacidad|informaci[oó]n/i],['hi','speech-hi.wav',/राहुल.*निजी/]]){
+   await p.locator('#speech-language').selectOption(language);
+   await p.waitForFunction(async language=>(await chrome.storage.local.get('incognixSpeechLanguage')).incognixSpeechLanguage===language,language);
+   const result=await p.evaluate(async({bytes,language})=>{const {readMedia}=await import('./media-text.mjs');return readMedia(new File([new Uint8Array(bytes)],'voice.wav'));},{bytes:[...fs.readFileSync(path.join(__dirname,'fixtures',file))],language});
+   console.log('Actual '+language+' speech:',result.text);assert(expected.test(result.text),'Selected-language transcription must preserve the spoken language');
+  }
+  await p.locator('#speech-language').selectOption('en');
+  await p.waitForFunction(async()=>(await chrome.storage.local.get('incognixSpeechLanguage')).incognixSpeechLanguage==='en');
   const cancelled=await p.evaluate(async bytes=>{const {readMedia}=await import('./media-text.mjs');const c=new AbortController();setTimeout(()=>c.abort(),100);try{await readMedia(new File([new Uint8Array(bytes)],'voice.wav'),{signal:c.signal});return false;}catch(e){return e.name==='AbortError';}},bytes);assert(cancelled);
   const recorded=await p.evaluate(async()=>{const {recordVoice}=await import('./recording.mjs');const f=await recordVoice({onReady:stop=>setTimeout(stop,900)});const b=new Uint8Array(await f.arrayBuffer());return {name:f.name,size:f.size,header:new TextDecoder().decode(b.slice(0,4))};});
   assert(recorded.size>10000&&recorded.name==='voice-recording.wav'&&recorded.header==='RIFF');

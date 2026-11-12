@@ -181,3 +181,10 @@ Final 0.11.0 code `40b01f6`: [clean CI passed](https://github.com/harshmaurya140
 ## November 9 — 0.11.1 microphone recovery
 
 The installed-extension multimodal suite serves a Claude-shaped fixture with `Permissions-Policy: microphone=()`. Embedded recording is denied; the extension-owned tab captures a real synthetic microphone stream. Cancellation retains the private draft. An edited synthetic transcript returns as a private attachment and is absent from the host DOM. Existing real Whisper/Office/WebM cases passed in the targeted run. Background tests reject wrong-tab/host senders and replay, and require composer acknowledgement before result disposal. This is controlled Chromium evidence, not a claim that the user's macOS microphone consent has been granted.
+
+## November 12 — 0.12.0 media verification
+- Pinned local Whisper small, actual synthetic English/Spanish/Hindi WAV inference. Expected core terms and Hindi script checked; observed Spanish Ana→Anna and Hindi spelling errors remain documented. Tiny/base Hindi failures led to selecting small; failed experiments are not counted as passes.
+- Saved spoken-language selection is exercised through the workspace UI and passed to inference. Unsupported language values reject before decoding. A 130-second WAV passes metadata admission and is then explicitly cancelled before decode. This is a duration-boundary test, not a ten-minute accuracy benchmark.
+- Silent WebM with rendered synthetic name/email: actual local video decode, sampled-frame English OCR, timestamp, generic attachment routing. Audio-only WebM retains speech extraction. Pre-abort and active cancellation, bounded sample times and zero external requests checked.
+- Full browser suite including existing provider fixtures passed (`artifacts/browser-0.12.0.log`); contextual inference is mocked in provider fixtures. Real speech/OCR/Office/NER tests do not mock those engines.
+- Signed-in 0.12.0 acceptance remains pending reload. The recorded 0.11.1 recovery result is separate evidence.

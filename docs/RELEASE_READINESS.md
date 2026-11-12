@@ -33,3 +33,6 @@ Status: development prerelease. Do not label this build universally compatible o
 ## Shipping scope
 
 A final release should publish a versioned support matrix with precise limits and last-tested dates. Generic activation is best-effort integration, not a network firewall. Unsupported attachments must fail visibly and retain the draft. No raw private data may be sent merely to improve compatibility. Keep the development label until required acceptance and security gates have evidence.
+
+## November 12 — media expansion (0.12.0)
+Pinned multilingual Whisper small replaces the English-only speech model. English, Spanish and Hindi synthetic fixtures exercise real local inference; explicit decoder-language/task tokens are used. File duration is ten minutes, microphone duration four minutes, speech deadline fifteen minutes. Existing 8 MB/file and text budgets remain. Up to 24 video frames undergo local English OCR; timestamped distinct text joins speech in the same review path. Silent video and audio-only WebM cases pass. Multilingual NER quality, untested languages/accents, all-site integration and full video scene understanding are not established by these tests.

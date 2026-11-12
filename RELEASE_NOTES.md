@@ -1,3 +1,11 @@
+## 0.12.0 — multilingual speech and video visual text
+
+- Replace English-only Whisper tiny with pinned, bundled multilingual Whisper small; spoken-language controls in Privacy tools, the recorder and workspace. Keep transcription in the selected language.
+- Raise file audio/video duration to ten minutes and microphone capture to four minutes. File-size and text budgets remain enforced; decoding and inference are cancellable.
+- Extract timestamped English text from up to 24 sampled video frames, including silent videos. Audio-only WebM/MP4 retain speech extraction. Frame sampling is not full video understanding or a sanitized video export.
+- Show attachment-specific extraction notices in the composer, including unavailable audio and visual sampling scope.
+- Actual local English, Spanish and Hindi speech fixtures; video OCR, cancellation and blocked-network checks. Smaller-model Hindi failures were rejected before selecting the release model. Transcription still needs correction and privacy review.
+
 ## 0.11.1 — microphone permission recovery
 
 - Embedded microphone permission denial now opens an extension-owned recording tab. Browser/OS consent is still required.

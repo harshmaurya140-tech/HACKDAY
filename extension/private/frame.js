@@ -106,6 +106,7 @@ function renderAttachments(){
   $('attachment-info').hidden=!item;$('attachment-review').hidden=!item;$('remove-attachment').hidden=!item;
   $('attachment-select').replaceChildren(...attachments.map((a,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=(i+1)+'. '+a.name;return o;}));
   $('attachment-select').value=String(attachmentIndex);$('extracted-text').value=item?.text||'';
+  $('attachment-notice').textContent=item?.notice||'';
   if(item)$('attachment-info').textContent=`${item.ocr?(/\.(png|jpe?g)$/i.test(item.name)?'Image text ready':'Scanned PDF text ready'):'Document attached'} · ${attachments.length} file(s) · originals stay local.`;
   resize();
 }
@@ -131,7 +132,7 @@ function updateProtectionUI(enabled){
   resize();
 }
 function status(text,error=false){const el=$('status');el.textContent=text;el.className='status '+(error?'error':'ok');}
-function markBusy(on){for(const id of ['copy-reviewed','attach','record-voice','remove-attachment','attachment-select','extracted-text','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
+function markBusy(on){for(const id of ['speech-language','copy-reviewed','attach','record-voice','remove-attachment','attachment-select','extracted-text','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
 function makeChoice(e){
   const box=document.createElement('div');box.className='choice';
   const heading=document.createElement('div');heading.className='choice-header';
@@ -252,7 +253,7 @@ async function initComposer(){
     if(documentLoading){status('Wait for document reading or cancel it before adding files.',true);return;}
     const controller=new AbortController();documentController=controller;
     invalidateDraft();documentLoading=true;
-    for(const id of ['attach','record-voice','remove-attachment','attachment-select','extracted-text','send','protection-toggle'])$(id).disabled=true;
+    for(const id of ['speech-language','attach','record-voice','remove-attachment','attachment-select','extracted-text','send','protection-toggle'])$(id).disabled=true;
     $('cancel-document').hidden=false;
     $('attachment-info').hidden=false;resize();
     try{
@@ -277,12 +278,12 @@ async function initComposer(){
     if(stopRecording){stopRecording();return;}
     if(busy||documentLoading||!protectionEnabled)return;
     const controller=new AbortController();documentController=controller;documentLoading=true;
-    invalidateDraft();for(const id of ['attach','send','protection-toggle','remove-attachment','extracted-text','attachment-select'])$(id).disabled=true;
+    invalidateDraft();for(const id of ['speech-language','attach','send','protection-toggle','remove-attachment','extracted-text','attachment-select'])$(id).disabled=true;
     $('record-voice').disabled=true;$('cancel-document').hidden=false;$('cancel-document').textContent='Cancel recording';status('Allow the microphone to record locally.');
     let file,recorderToken;
     try{
       const {recordVoice}=await import('./recording.mjs');
-      file=await recordVoice({signal:controller.signal,onReady:stop=>{stopRecording=stop;$('record-voice').disabled=false;$('record-voice').textContent='Stop recording';},onProgress:seconds=>status(`Recording locally · ${seconds}s / 120s`)});
+      file=await recordVoice({signal:controller.signal,onReady:stop=>{stopRecording=stop;$('record-voice').disabled=false;$('record-voice').textContent='Stop recording';},onProgress:seconds=>status(`Recording locally · ${seconds}s / 240s`)});
     }catch(e){
       if(!controller.signal.aborted&&['NotAllowedError','SecurityError'].includes(e.name)){
         let token;

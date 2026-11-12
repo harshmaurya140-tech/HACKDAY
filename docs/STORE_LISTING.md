@@ -1,16 +1,16 @@
-# Chrome Web Store submission materials — Incognix 0.11.0
+# Chrome Web Store submission materials — Incognix 0.12.0
 
 Status: prepared copy and disclosures; not submitted or approved. A developer account, final publisher identity, hosted privacy-policy URL and store review are required to publish.
 
 ## Short description
 
-Local privacy review for AI chats: text, document extraction and English speech transcription. Review before sharing.
+Local privacy review for AI chats: text, document extraction and multilingual speech transcription. Review before sharing.
 
 ## Description
 
 Incognix adds a private composer to supported AI chat pages. Review the exact outgoing text, hide personal details with reversible placeholders, then send only after confirmation. Known placeholders in replies are restored locally.
 
-Attach PDF, text, PNG/JPEG, DOCX, XLSX or PPTX documents. Supported audio and audio-bearing video clips are transcribed locally in English. Record voice after explicitly granting microphone permission. Extracted text and transcripts remain editable before privacy review. File limits and omitted content are shown in the interface; original files are not uploaded by these flows.
+Attach PDF, text, PNG/JPEG, DOCX, XLSX or PPTX documents. Supported audio and audio-bearing video clips are transcribed locally in the selected spoken language. Video visual text is sampled with English OCR; scene understanding is not claimed. Record voice after explicitly granting microphone permission. Extracted text and transcripts remain editable before privacy review. File limits and omitted content are shown in the interface; original files are not uploaded by these flows.
 
 ChatGPT, Claude and Gemini have dedicated integrations. Other HTTPS sites can be enabled per site or across HTTPS sites. Automatic integration depends on the editor and send controls; use the input picker or reviewed-copy workflow when a site cannot be integrated. Closed components, cross-origin embedded editors and arbitrary native uploads are not universally supported.
 

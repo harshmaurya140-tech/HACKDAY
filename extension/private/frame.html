@@ -21,16 +21,16 @@
     </section>
     <section id="preview" hidden><label for="outgoing">Exact text the chatbot will receive</label><textarea id="outgoing" readonly rows="5"></textarea><div class="toolbar"><button id="preview-cancel" class="secondary">Back to draft</button><button id="copy-reviewed" class="secondary">Copy reviewed text</button><button id="confirm-send">Send reviewed text</button></div></section>
     <div class="toolbar" id="native-recovery" hidden><button type="button" id="discard-native" class="secondary">Discard website draft</button></div>
-    <div id="attachment-info" role="status" hidden></div><details id="attachment-review" hidden><summary>Review extracted text</summary><label for="attachment-select">Attached files (names stay local)</label><select id="attachment-select"></select><textarea id="extracted-text" aria-label="Extracted attachment text" rows="4"></textarea><small>Up to 5 files, 8 MB each / 24 MB total; 12,000 characters with your prompt. Audio/video: two minutes, English speech only. Correct extraction and transcription mistakes before review. Only extracted text is shared; images and layout stay local.</small></details>
+    <div id="attachment-info" role="status" hidden></div><details id="attachment-review" hidden><summary>Review extracted text</summary><label for="attachment-select">Attached files (names stay local)</label><select id="attachment-select"></select><p id="attachment-notice" class="notice"></p><textarea id="extracted-text" aria-label="Extracted attachment text" rows="4"></textarea><small>Up to 5 files, 8 MB each / 24 MB total; 12,000 characters with your prompt. Audio/video: ten minutes; select the spoken language in Privacy tools. Correct extraction and transcription mistakes before review. Only extracted text is shared. Videos include sampled visual text, not face/scene descriptions; image pixels and layout stay local.</small></details>
     <input id="attachment-file" type="file" accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg,.docx,.xlsx,.pptx,.wav,.mp3,.m4a,.ogg,.flac,.webm,.mp4" multiple hidden>
     <div class="toolbar bottom">
-      <button id="attach" type="button" class="secondary" aria-label="Attach documents, images, audio or video" title="Attach up to 5 files; audio/video up to 2 minutes — 8 MB each, 24 MB total">＋</button>
-      <button id="record-voice" type="button" class="secondary" title="Record up to two minutes locally; microphone permission required">Record voice</button>
+      <button id="attach" type="button" class="secondary" aria-label="Attach documents, images, audio or video" title="Attach up to 5 files; audio/video up to 10 minutes — 8 MB each, 24 MB total">＋</button>
+      <button id="record-voice" type="button" class="secondary" title="Record up to four minutes locally; microphone permission required">Record voice</button>
       <button id="remove-attachment" type="button" class="secondary" hidden>Remove selected</button><button id="cancel-document" type="button" class="secondary" hidden>Cancel reading</button>
       <span class="notice" id="notice">Sensitive details stay local until you approve a disclosure.</span>
       <button id="send">Review ↑</button>
     </div>
-    <details class="tools"><summary>Privacy tools</summary><div class="foot"><button id="rescan" class="link">Refresh restored messages</button><button id="clear" class="link">Clear private mappings</button></div></details>
+    <details class="tools"><summary>Privacy tools</summary><label for="speech-language">Spoken language</label><select id="speech-language" aria-label="Spoken language"></select><small>Choose before recording or attaching audio. Transcription preserves the selected language.</small><div class="foot"><button id="rescan" class="link">Refresh restored messages</button><button id="clear" class="link">Clear private mappings</button></div></details>
   </main>
   <main id="off-toggle" hidden>
     <button type="button" id="reenable-protection" class="protection-switch" role="switch" aria-checked="false" aria-label="Turn privacy protection on"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span>Protection off</span></button>
@@ -47,5 +47,5 @@
   <script src="local-ai.js"></script>
   <script src="attachment-batch.js"></script>
   <script src="frame.js"></script>
-</body>
+<script type="module" src="speech-settings.mjs"></script></body>
 </html>

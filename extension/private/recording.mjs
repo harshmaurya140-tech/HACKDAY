@@ -1,3 +1,4 @@
+import {MAX_RECORDING_SECONDS} from './media-options.mjs';
 // Explicit user gesture only. Capture bounded mono PCM; never use cloud speech.
 export function wavFile(chunks,length,rate=16000){
  const b=new ArrayBuffer(44+length*2),v=new DataView(b);const ascii=(p,s)=>{for(let i=0;i<s.length;i++)v.setUint8(p+i,s.charCodeAt(i));};
@@ -21,11 +22,11 @@ export async function recordVoice({signal,onReady=()=>{},onProgress=()=>{}}={}){
   if(ctx.sampleRate!==16000)throw Error('This device does not support local 16 kHz recording. Attach an audio file instead.');
   source=ctx.createMediaStreamSource(stream);processor=ctx.createScriptProcessor(4096,1,1);gain=ctx.createGain();gain.gain.value=0;
   processor.onaudioprocess=e=>{
-   if(settled)return;const data=e.inputBuffer.getChannelData(0),take=Math.min(data.length,120*16000-length);chunks.push(data.slice(0,take));length+=take;
-   onProgress(Math.floor(length/16000));if(length>=120*16000)finish();
+   if(settled)return;const data=e.inputBuffer.getChannelData(0),take=Math.min(data.length,MAX_RECORDING_SECONDS*16000-length);chunks.push(data.slice(0,take));length+=take;
+   onProgress(Math.floor(length/16000));if(length>=MAX_RECORDING_SECONDS*16000)finish();
   };
   source.connect(processor);processor.connect(gain);gain.connect(ctx.destination);
-  onReady(()=>finish());timer=setTimeout(()=>finish(),120000);
+  onReady(()=>finish());timer=setTimeout(()=>finish(),MAX_RECORDING_SECONDS*1000);
   await stopped;signal?.throwIfAborted();if(length<16000/4)throw Error('Recording too short. Record at least a short sentence.');
   return wavFile(chunks,length);
  }finally{settled=true;clearTimeout(timer);signal?.removeEventListener('abort',abort);if(processor)processor.onaudioprocess=null;source?.disconnect();processor?.disconnect();gain?.disconnect();stream?.getTracks().forEach(t=>t.stop());if(ctx)await ctx.close().catch(()=>{});}

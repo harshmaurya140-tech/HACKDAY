@@ -114,7 +114,7 @@ async function handle(msg,sender){
     await chrome.storage.session.remove(Object.entries(all).filter(([k,v])=>k.startsWith('incognix-recording:')&&v.expires<Date.now()).map(([k])=>k));
     const token=crypto.randomUUID(),key='incognix-recording:'+token;
     const tab=await chrome.tabs.create({url:chrome.runtime.getURL('private/recorder.html')+'?token='+token,active:true});
-    await chrome.storage.session.set({[key]:{bridge:msg.bridge,tabId:entry.tabId,recorderTab:tab.id,expires:Date.now()+10*60*1000,done:false}});
+    await chrome.storage.session.set({[key]:{bridge:msg.bridge,tabId:entry.tabId,recorderTab:tab.id,expires:Date.now()+30*60*1000,done:false}});
     return {ok:true,token};
   }
   if(msg.type==='POLL_RECORDER'||msg.type==='CANCEL_RECORDER'||msg.type==='ACK_RECORDER'){

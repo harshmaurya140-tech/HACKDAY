@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Incognix",
-  "version": "0.11.1",
-  "description": "Local privacy review for AI chats: text, Office/PDF/image extraction and English audio/video transcription. Review before sharing.",
+  "version": "0.12.0",
+  "description": "Local privacy review for AI chats: documents, multilingual speech and sampled video text. Review before sharing.",
   "minimum_chrome_version": "138",
   "permissions": [
     "storage",

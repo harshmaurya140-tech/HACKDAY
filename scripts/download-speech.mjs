@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 const manifest=JSON.parse(await readFile('docs/SPEECH_ASSETS.json','utf8'));
 for(const entry of manifest.files){
  const dest='extension/model/speech/'+entry.file;let data;
- try{data=await readFile(dest);}catch{
+ try{data=await readFile(dest);if(data.length!==entry.bytes||createHash('sha256').update(data).digest('hex')!==entry.sha256)throw Error('Stale model');}catch{
   if(process.argv.includes('--verify'))throw Error('Speech model missing: '+entry.file);
   const r=await fetch(`https://huggingface.co/${manifest.repository}/resolve/${manifest.revision}/${entry.file}`);if(!r.ok)throw Error('Speech asset download failed '+r.status);data=Buffer.from(await r.arrayBuffer());
  }

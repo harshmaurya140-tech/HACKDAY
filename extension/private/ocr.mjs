@@ -14,7 +14,8 @@ export async function recognize(canvas,{onProgress=()=>{},signal}={}){
     if(!word.text?.trim())continue;
     const start=text.length;text+=word.text+' ';words.push({text:word.text,start,end:start+word.text.length,confidence:word.confidence,bbox:word.bbox});
    }
-   if(!words.length||text.length>12000)throw Error('OCR text unavailable or over limit.');
+   if(!words.length)throw Error('No readable text detected.');
+   if(text.length>12000)throw Error('OCR text exceeds 12,000 characters.');
    return {text,words,confidence:result.data.confidence};
   })();
   return await Promise.race([work,stopped,new Promise((_,reject)=>{timer=setTimeout(()=>{expired=true;reject(Error('Local OCR timed out.'));abort();},90000);})]);
