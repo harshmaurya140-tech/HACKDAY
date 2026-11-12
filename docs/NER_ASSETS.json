@@ -1,0 +1,37 @@
+{
+  "model": "Xenova/bert-base-NER",
+  "revision": "8e892123e8b7c2c0c2bd1dcb598b7d244c4e53aa",
+  "license": "MIT",
+  "files": [
+    {
+      "file": "config.json",
+      "bytes": 999,
+      "sha256": "a73a2eccc921bbdea95a94b49a157d3694b5c2abbae7a6f3000e14404a9c31a8"
+    },
+    {
+      "file": "tokenizer.json",
+      "bytes": 668923,
+      "sha256": "343989712a36cd8b253efeaf8baf6a08b9d2583f78e395e83832e8ee9f8d8ee1"
+    },
+    {
+      "file": "tokenizer_config.json",
+      "bytes": 385,
+      "sha256": "5be1a180e9badb4811a6c31502d70fb35a085af5457982937419c42d7530bae6"
+    },
+    {
+      "file": "special_tokens_map.json",
+      "bytes": 125,
+      "sha256": "b6d346be366a7d1d48332dbc9fdf3bf8960b5d879522b7799ddba59e76237ee3"
+    },
+    {
+      "file": "vocab.txt",
+      "bytes": 213450,
+      "sha256": "eeaa9875b23b04b4c54ef759d03db9d1ba1554838f8fb26c5d96fa551df93d02"
+    },
+    {
+      "file": "onnx/model_quantized.onnx",
+      "bytes": 108952255,
+      "sha256": "caaee70a5518ec7f9e46e5308fcc9263a8c227703a9ce46cf61c69a552349648"
+    }
+  ]
+}

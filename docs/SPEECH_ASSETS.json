@@ -1,0 +1,41 @@
+{
+  "repository": "Xenova/whisper-small",
+  "revision": "2d67713f236afa48a18992566e7647f6ca848e13",
+  "files": [
+    {
+      "file": "config.json",
+      "bytes": 2232,
+      "sha256": "5a6429d21d7a3379dd0861b74510f9f7076f32b563bffc9fcb072482d55ab3be"
+    },
+    {
+      "file": "generation_config.json",
+      "bytes": 3837,
+      "sha256": "0b7407a4e53a677f826e03c75d409e6f830663932bf43dda3b08c5efa2223279"
+    },
+    {
+      "file": "tokenizer.json",
+      "bytes": 2480466,
+      "sha256": "27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566"
+    },
+    {
+      "file": "tokenizer_config.json",
+      "bytes": 282683,
+      "sha256": "2a4c4281cf9f51ac6ccc406fdc711a087afe6530f671fa7b80953edc498275ce"
+    },
+    {
+      "file": "preprocessor_config.json",
+      "bytes": 339,
+      "sha256": "a6a76d28c93edb273669eb9e0b0636a2bddbb1272c3261e47b7ca6dfdbac1b8d"
+    },
+    {
+      "file": "onnx/encoder_model_quantized.onnx",
+      "bytes": 92324809,
+      "sha256": "969f5ac12974340386bf7a02ea6626003e5e2dee396ffc6ab0eec282bf55ba06"
+    },
+    {
+      "file": "onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 156780950,
+      "sha256": "fcfc6100dc7339e7507e10f8b274350be7c4f8d8b575f0293f94cc0e156d6d24"
+    }
+  ]
+}

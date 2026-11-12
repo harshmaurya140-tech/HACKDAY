@@ -5,7 +5,7 @@ const src=fs.readFileSync(__dirname+'/../extension/content/content.js','utf8');
 assert.match(css,/#choices\{max-height:min\(/,'bounded scroll for large disclosures');
 assert.match(css,/#permission>\.toolbar\{position:sticky/,'approve and cancel remain visible');
 assert.match(css,/\.top \.status\{margin-left:auto;max-width:75%/,'errors are wrapped instead of overlaying headings');
-assert.match(src,/window\.innerHeight-\(frameRect\?\.top\?\?0\)-14/,'composer is bounded by its actual screen position');
+assert.match(src,/box\.bottom>window\.innerHeight-12/,'composer overflow is repositioned inside viewport');
 assert.match(css,/#permission #choices\{/,'permission choices use flex-scrolling');
 assert.match(css,/#composer\{/,'whole composer height is constrained');
 console.log('PASS: large consent lists scroll internally, actions remain visible, frame height viewport-capped');

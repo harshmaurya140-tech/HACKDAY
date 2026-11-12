@@ -1,48 +1,89 @@
-# Incognix v0.7.1 — Native textbox visibility when protection is OFF
+## 0.12.0 — multilingual speech and video visual text
 
-## Fixed
+- Replace English-only Whisper tiny with pinned, bundled multilingual Whisper small; spoken-language controls in Privacy tools, the recorder and workspace. Keep transcription in the selected language.
+- Raise file audio/video duration to ten minutes and microphone capture to four minutes. File-size and text budgets remain enforced; decoding and inference are cancellable.
+- Extract timestamped English text from up to 24 sampled video frames, including silent videos. Audio-only WebM/MP4 retain speech extraction. Frame sampling is not full video understanding or a sanitized video export.
+- Show attachment-specific extraction notices in the composer, including unavailable audio and visual sampling scope.
+- Actual local English, Spanish and Hindi speech fixtures; video OCR, cancellation and blocked-network checks. Smaller-model Hindi failures were rejected before selecting the release model. Transcription still needs correction and privacy review.
 
-- Protection OFF hides the **entire private-composer iframe**, not merely its textarea. The AI website's native input becomes unobstructed and usable, including seeing everything typed.
-- A small **Protection off** switch in a separate extension-origin iframe floats **above** (not inside) the website composer, allowing the user to turn privacy protection back on without disabling the extension.
-- Protection ON hides the website composer and restores the already-existing private composer, keeping private drafts inside the extension-origin frame.
-- No protected draft is copied to the website when protection is switched off. If an unsent native website draft exists, turning protection back on is blocked until the user clears or sends it.
-- OFF state is maintained if the website rerenders its editor; navigation to a different conversation resets protection ON as a safe default.
+## 0.11.1 — microphone permission recovery
 
-## Testing
+- Embedded microphone permission denial now opens an extension-owned recording tab. Browser/OS consent is still required.
+- Reviewed local transcripts return through a tab-bound, single-use session job. Raw audio and transcripts never pass through the website.
+- Drafts are retained; transcripts remain in the recorder when attachment import fails. The recorder closes only after successful import acknowledgement.
+- Tests cover microphone-denying hosts, synthetic-device capture, cancellation, transcript return, spoofed senders and replay.
 
-- 44 JavaScript regression test suites passed.
-- Chromium DOM integration passed OFF→native typing→ON, including refusal to overwrite a nonempty native draft.
-- Chromium rendered the small extension-origin OFF toggle and verified its ON request.
-- These are synthetic tests, not authenticated Chrome/Claude end-to-end validation.
+# 0.11.0 — Office, local speech and web-component integration
 
-## Release limitations
+- Add DOCX/XLSX/PPTX text extraction with bounded ZIP expansion, CRC checks, entity-declaration rejection, slide ordering and cached spreadsheet values. Never execute macros/formulas or fetch external relationships.
+- Bundle a pinned quantized Whisper English speech model and runtime. Audio-bearing MP4/WebM and supported audio files become editable local transcripts; original media stays local. Limits: two minutes, 8 MB and a three-minute processing deadline.
+- Add explicit-click microphone recording, visible Stop/Cancel controls, bounded PCM capture and track cleanup. Restrictive site microphone policy may require attaching a recorded file instead.
+- Share attachment readers across composer/workspace; all extracted content uses the existing mandatory masked preview and confirmed-send flow.
+- Discover open shadow-root editors, nested generic send controls and streamed replies. Verify isolation, masked send and restoration in an installed-extension fixture.
+- Add extension icons, model/license provenance, Office/media threat-model notes and distribution disclosures.
+- Tests use actual Office decompression, speech inference, synthetic microphone capture and WebM audio decoding. Contextual inference in provider fixtures remains mocked. Universal website compatibility and perfect detection are not claimed.
 
-- GLiNER2 model/runtime artifacts remain unbundled; the interim detector relies on Chrome on-device AI.
-- This is an experimental development build, not Web Store published or security audited. Use only synthetic data.
+# 0.10.1 development prerelease — November 8
 
----
+- Protect explicitly labelled credentials regardless of length: short passwords/API keys are no longer skipped.
+- Protect complete quoted secrets, including spaces and escaped quotes; remove the 500-character truncation that could expose a secret suffix.
+- Recognize Bearer and Basic authorization header values, including JSON and curl-style quoted headers. Credentials remain non-disclosable through the review controls.
+- A placeholder-shaped substring no longer exempts surrounding private content from masking; exact standalone placeholders remain unchanged.
+- Empty values and line breaks do not consume the next line. Plain discussions of password hashing and bearer authentication are counter-tested.
+- Expand the actual bundled NER/rules evaluation from eight to fourteen cases. The five new credential cases are mandatory regression gates; known contextual misses remain reported honestly.
+- No new permissions, model downloads, or website-specific behavior changes. Existing compatibility and modality limitations remain.
 
-# Incognix v0.7.1 — Composer toggle and host-adaptive visual update
+# 0.10.0 development prerelease — November 7
 
-This release continues from v0.6.3 and addresses the three requested UI/interaction changes.
+- Multiple attachments in the private composer: select, paste or drop up to five PDF/TXT/MD/CSV/PNG/JPEG files, within 8 MB per file, 24 MB total and 12,000 combined prompt/extraction characters.
+- Sequential extraction and a Cancel reading control. New batches commit together; unreadable, empty, cancelled or over-limit files leave existing attachments and edits unchanged.
+- A local filename selector supports individual extracted-text correction and removal. Filenames and original bytes never enter the outgoing text.
+- Recheck the combined text budget after edits made during extraction. Disable review during reading and invalidate earlier previews on changes.
+- Mask every occurrence of contextually detected private values; remove the silent twelve-occurrence cutoff. Excessive span counts still block sending.
+- Release decoded image buffers after OCR. Correct the installation ZIP version and clean-checkout test command order.
+- This build remains a prerelease: broader signed-in acceptance, independent security review and store publication are not complete. Office formats, voice/video and universal website compatibility are not claimed.
 
-## Implemented
+# 0.9.10 development prerelease
 
-- **Per-chat, default-on privacy toggle** inside the extension-controlled prompt bar. Off restores the original site's composer; On reclaims it for protected sending. The compact switch remains available while off.
-- **Safe mode transitions.** Turning off never copies a private extension draft into the page; it clears only its own verified previously staged sanitized draft. Re-enabling refuses to erase a genuine website draft. Toggling during an active submission is refused.
-- **Adaptive UI.** Reads computed presentation styles (opaque background, text, border, button colors, font family and radius) from the actual AI page composer, validates their format and renders the extension with matching visual tokens. This is not a set of hardcoded platform themes.
-- **Unbranded input.** Removed the old product-name heading and diamond mark from the private composer; response labels remain hidden. Removed unused Python pairing UI markup.
-- **Security.** Mode changes must originate from an authorized extension-origin frame; the content script can only be toggled through the service worker's validated channel. Private draft content does not accompany a toggle message.
+- Protect explicitly labelled birth dates in common numeric and full English-month formats; leave unlabelled reference dates to contextual analysis.
+- Guard completed reviews against late cancellation and stale model progress, retaining cancelled drafts.
+- Improve name/phone boundaries, local exact-age results, clipboard policy handling and Claude reply formatting.
+- Support observed DeepSeek send controls, first-send navigation and same-tab restoration; optional site permission is still required.
+- Add an eight-case real BERT/rules evaluation that records known misses and over-masking. SYNTHETIC heading over-masking remains unresolved.
+- Clean GitHub CI now passes on pinned Ubuntu 24.04 and produces development ZIPs. Selected live results and remaining release gates are documented in docs/TEST_EVIDENCE.md and docs/RELEASE_READINESS.md.
+- Private mappings remain tab-bound and are removed when the tab closes. Universal compatibility, Office files, voice/video and multiple attachments remain outside this prerelease's verified capabilities.
 
-## Validation performed
+## 0.8.3 — attachment workflow and accurate status
 
-- 43 JavaScript regression suites (including a new toggle authorization and DOM contract test).
-- Local Chromium styling preview for protected and off states.
-- Source ZIP and extension ZIP validity.
+- Paste screenshots into the private draft or drop one supported file onto the composer. Replacing an attachment cancels its processing and invalidates earlier previews.
+- Composer PDF attachments now OCR image-only pages locally with the bundled English model. Limits: 10 PDF pages when OCR is needed, 20M total rendered pixels and a three-minute document deadline. Text-only workspace behavior is unchanged.
+- OCR cancellation settles promptly even during worker startup; late-created workers terminate.
+- Generic adapters recognize a unique plain-text Send/Ask/Submit button inside the bound composer, ignoring hidden/disabled controls and rejecting ambiguity.
+- Toolbar status explicitly reports protection OFF instead of claiming an installed composer is active.
+- This is an incremental development release. Broader live-site acceptance, multiple attachments, multilingual quality evaluation and visual-image sharing remain outstanding.
 
-## Still not verified / not launch ready
+## 0.8.2 — composer images and wider activation
 
-- Real model GLiNER2 weights and bundled inference runtime are missing; Chrome on-device AI remains the detector.
-- End-to-end logged-in ChatGPT/Claude/Gemini interactive and privacy leakage tests still required.
-- Chrome Web Store review / public listing not submitted.
-- Not for real sensitive data yet.
+- PNG/JPEG attachments now use the bundled local OCR, with editable extracted text and the existing mandatory privacy preview. Original pixels remain local.
+- New neutral graphite/blue composer, full bounded shell replacement (including native toolbars), and consistent restored user bubbles/assistant typography.
+- Optional activation across HTTPS sites and a manual input picker extend the generic adapter beyond the three built-in sites. Unknown send controls and unsupported editors still fail closed.
+- Explicitly labelled 4–8 digit account identifiers are now masked by the format validator.
+- Automated installed-extension fixtures exercise real image OCR, PDF review/send, full shell replacement and small viewports. Contextual AI remains mocked in those tests; Claude passed a signed-in masked-send/restoration check; Gemini preview passed, but delivery checking was interrupted by the screen-capture connection. Broader signed-in acceptance remains outstanding.
+
+# 0.8.1 development prerelease
+
+- Attach text PDFs/TXT/MD/CSV directly inside the protected composer. Local extraction feeds the existing masking, disclosure and outgoing-preview flow. Sends reviewed text, not original PDF bytes. Combined prompt/document limit is 12,000 characters; scans and encrypted PDFs are rejected.
+- Compact auto-growing input, collapsed privacy tools, host-adaptive colors and corrected height-budget forwarding. Consent/preview content scrolls within the available frame.
+- Toolbar popup replaces automatic workspace-tab opening. Optional per-site permissions and a generic adapter extend to supported labelled chat forms on other HTTPS sites. Unknown or ambiguous layouts stay unchanged; universal compatibility is not claimed.
+- Bind private channels to their registered origin and reject private APIs after host-permission removal. Restrict generic sends to the selected composer container.
+- Preserve multiline sanitized text in contenteditable inputs.
+
+Live acceptance of this revision remains pending. See test evidence for isolated automated coverage.
+
+# 0.8.0 development prerelease
+
+Starting from v0.7.1, this build replaces the active placeholder NER path with bundled quantized BERT inference, adds local English OCR, a universal manual workspace, exact outgoing previews, document extraction and visual raster redaction. It also fixes stale-draft submission, serializes preview confirmation, tightens extension-origin checks and preserves integrated drafts in session storage.
+
+Legacy GLiNER adapter code/tests remain for compatibility but GLiNER weights are not shipped and the active UI does not load that path. BERT and Tesseract are the bundled engines. Chrome's language model remains required for contextual text analysis.
+
+See docs/TEST_EVIDENCE.md for measured validation and docs/CAPABILITIES.md for outstanding gates. This is not v1.0, not independently security-audited, and not approved for blanket claims of universal automatic chatbot or attachment protection.

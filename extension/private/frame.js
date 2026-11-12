@@ -27,15 +27,39 @@ const message=async p=>{
   if(res?.ok===false)throw Error(res.error||'Local protection unavailable');
   return res;
 };
+// Copy only on an explicit user click, entirely inside the extension document.
+// Some hosts prohibit the async Clipboard API even with iframe delegation.
+async function copyPrivateText(text){
+  const focused=document.activeElement;
+  const selection=window.getSelection();
+  const ranges=selection?Array.from({length:selection.rangeCount},(_,i)=>selection.getRangeAt(i).cloneRange()):[];
+  const field=document.createElement('textarea');
+  field.value=text;field.readOnly=true;field.setAttribute('aria-hidden','true');
+  field.style.cssText='position:fixed;left:-10000px;top:0;opacity:0';
+  document.body.append(field);
+  let copied=false;
+  try{field.select();copied=document.execCommand('copy');}catch{}finally{
+    field.remove();focused?.focus({preventScroll:true});
+    if(selection){selection.removeAllRanges();for(const range of ranges)selection.addRange(range);}
+  }
+  if(!copied){
+    // A denied async call logs a browser policy violation even when caught.
+    // Respect the effective embedding policy and retain manual-copy feedback.
+    const policy=document.permissionsPolicy||document.featurePolicy;
+    if(policy?.allowsFeature && !policy.allowsFeature('clipboard-write'))throw Error('Clipboard disabled by this page policy');
+    if(!navigator.clipboard?.writeText)throw Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(text);
+  }
+}
 let responseReady=false;
 let lastResize=-1;
 let lastResizeReady=null;
 async function resize(){
   const active=mode==='response'?$('response'):$('composer');
   if(!active || active.hidden)return;
-  // scrollHeight included the frame's viewport, causing a +15px feedback loop.
-  // Measure the actual content box instead, which is independent of iframe height.
-  const height=Math.ceil(active.getBoundingClientRect().height)+5;
+  // Measure this main element, never document/body scrollHeight (which includes
+  // the iframe viewport). Its overflow lets attachment/review panels expand.
+  const height=Math.ceil(Math.max(active.getBoundingClientRect().height,active.scrollHeight))+5;
   if(height===lastResize && (mode!=='response' || responseReady===lastResizeReady))return;
   lastResize=height;
   lastResizeReady=responseReady;
@@ -68,16 +92,33 @@ if('ResizeObserver' in window){
   watch.observe(mode==='response'?$('response'):$('composer'));
 }
 let current=null;
+let revision=0;
+let analysisController;
+let analysisCancelled=false;
+let previewId=null;
 let busy=false;
 let lastApprovedDecisions=null;
 let protectionEnabled=true;
+let attachments=[],attachmentIndex=0,documentLoading=false,documentController;
+function composerText(){return attachments.length?IncognixAttachments.compose($('draft').value,attachments):$('draft').value;}
+function renderAttachments(){
+  const item=attachments[attachmentIndex];
+  $('attachment-info').hidden=!item;$('attachment-review').hidden=!item;$('remove-attachment').hidden=!item;
+  $('attachment-select').replaceChildren(...attachments.map((a,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=(i+1)+'. '+a.name;return o;}));
+  $('attachment-select').value=String(attachmentIndex);$('extracted-text').value=item?.text||'';
+  $('attachment-notice').textContent=item?.notice||'';
+  if(item)$('attachment-info').textContent=`${item.ocr?(/\.(png|jpe?g)$/i.test(item.name)?'Image text ready':'Scanned PDF text ready'):'Document attached'} · ${attachments.length} file(s) · originals stay local.`;
+  resize();
+}
+function invalidateDraft(){analysisController?.abort();revision++;current=null;previewId=null;$('preview').hidden=true;$('permission').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});}
+function fitDraft(){const d=$('draft');d.style.height='36px';d.style.height=Math.min(120,Math.max(36,d.scrollHeight))+'px';resize();}
 function updateProtectionUI(enabled){
   protectionEnabled=Boolean(enabled);
   const button=$('protection-toggle');
   if(!button)return;
   button.setAttribute('aria-checked',String(protectionEnabled));
   button.setAttribute('aria-label',protectionEnabled?'Turn privacy protection off':'Turn privacy protection on');
-  $('protection-state').textContent=protectionEnabled?'Protection on':'Protection off';
+  $('protection-state').textContent=protectionEnabled?'Incognix · on':'Incognix · off';
   $('composer').dataset.protection=protectionEnabled?'on':'off';
   $('send').disabled=!protectionEnabled||busy;
   $('approve').disabled=!protectionEnabled||busy;
@@ -91,7 +132,7 @@ function updateProtectionUI(enabled){
   resize();
 }
 function status(text,error=false){const el=$('status');el.textContent=text;el.className='status '+(error?'error':'ok');}
-function markBusy(on){busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
+function markBusy(on){for(const id of ['speech-language','copy-reviewed','attach','record-voice','remove-attachment','attachment-select','extracted-text','confirm-send','preview-cancel','clear','protection-toggle','discard-native'])if($(id))$(id).disabled=on;busy=on;$('send').disabled=on||!protectionEnabled;$('approve').disabled=on||!protectionEnabled;}
 function makeChoice(e){
   const box=document.createElement('div');box.className='choice';
   const heading=document.createElement('div');heading.className='choice-header';
@@ -134,26 +175,38 @@ function showRecovery(error){
 async function prepareAndSend(decisions={}){
   if(!current||!protectionEnabled)return;
   lastApprovedDecisions=decisions;
+  const snapshot=revision;
   markBusy(true);
   try{
-    const done=await message({type:'PREPARE_AND_SEND',draftId:current.draft_id,decisions});
-    $('draft').value='';$('permission').hidden=true;$('native-recovery').hidden=true;current=null;lastApprovedDecisions=null;
-    status('Sanitized prompt handed to the AI website');
-    $('notice').textContent=`Protected ${done.replacements} field(s). Review the chat to confirm delivery.`;
-    await message({type:'RESCAN'}).catch(()=>{});
+    const preview=await message({type:'PREVIEW',draftId:current.draft_id,decisions});
+    if(snapshot!==revision)throw Error('Draft changed; review again.');
+    previewId=preview.previewId;$('outgoing').value=preview.sanitized_text;
+    $('preview').hidden=false;$('permission').hidden=true;status('Review exactly what will leave your browser');
+    return;
+
   }catch(e){status(e.message,true);showRecovery(e);$('notice').textContent='Nothing unprotected was intentionally submitted.';}
   finally{markBusy(false);resize();}
 }
 async function doSend(){
-  if(busy||!protectionEnabled)return;
-  if(current && !$('permission').hidden){status('Choose disclosure settings and click Approve & send.',true);return;}
-  const text=$('draft').value;
+  if(busy||documentLoading||!protectionEnabled)return;
+  if(current && !$('permission').hidden){status('Choose disclosure settings and click Review outgoing text.',true);return;}
+  const text=composerText();
   if(!text.trim())return;
-  markBusy(true);
+  if(text.length>12000){status('Prompt and document exceed 12,000 characters. Use a shorter document or excerpt.',true);return;}
+  current=null;previewId=null;$('preview').hidden=true;
+  const started=revision;
+  analysisCancelled=false;markBusy(true);$('cancel-analysis').hidden=false;
   try{
     status('Scanning locally…');
-    const local=await LocalPrivacyAI.analyze(text,{onStatus:msg=>status(msg)});
+    analysisController=new AbortController();
+    const controller=analysisController;
+    const local=await LocalPrivacyAI.analyze(text,{onStatus:msg=>{
+      if(analysisController===controller&&!controller.signal.aborted&&started===revision)status(msg);
+    },signal:controller.signal});
+    if(started!==revision)throw Error('Draft changed. Review it again.');
     const analysed=await message({type:'ANALYZE',text,entities:local.entities});
+    if(started!==revision){await message({type:'CANCEL_DRAFT'});throw Error('Draft changed. Review it again.');}
+    analysisController=null;$('cancel-analysis').hidden=true;
     current=analysed;
     $('native-recovery').hidden=true;
     const needed=groupPermissionEntities(analysed.entities);
@@ -167,15 +220,116 @@ async function doSend(){
       markBusy(false);
       await prepareAndSend({});
     }
-  }catch(e){status(e.message,true); /* Fail closed: no Python or cloud fallback. */}
-  finally{markBusy(false);resize();}
+  }catch(e){status(analysisCancelled?'Analysis cancelled. Your draft is retained.':e.message,!analysisCancelled); /* Fail closed. */}
+  finally{analysisController=null;$('cancel-analysis').hidden=true;markBusy(false);resize();}
 }
 async function initComposer(){
+  $('cancel-analysis').addEventListener('click',()=>{
+    // Ignore queued clicks once analysis has handed control to the review UI.
+    if(!busy||!analysisController||$('cancel-analysis').hidden)return;
+    analysisCancelled=true;analysisController.abort();window.IncognixNER?.dispose();revision++;
+    $('cancel-analysis').hidden=true;status('Analysis cancelled. Your draft is retained.');
+  });
   $('composer').hidden=false;
   $('composer').dataset.protection='on';
+  $('draft').maxLength=12000;
+  $('draft').addEventListener('input',fitDraft);
+  document.querySelector('.tools').addEventListener('toggle',resize);
+  $('attachment-review').addEventListener('toggle',resize);
+  $('extracted-text').maxLength=12000;
+  $('extracted-text').addEventListener('input',()=>{if(attachments[attachmentIndex]){attachments[attachmentIndex].text=$('extracted-text').value;invalidateDraft();}});
+  $('attachment-select').addEventListener('change',()=>{attachmentIndex=Number($('attachment-select').value);renderAttachments();});
+  $('attach').addEventListener('click',()=>{if(!busy&&!documentLoading)$('attachment-file').click();});
+  $('remove-attachment').addEventListener('click',()=>{
+    if(busy||documentLoading)return;
+    attachments.splice(attachmentIndex,1);attachmentIndex=Math.max(0,Math.min(attachmentIndex,attachments.length-1));
+    invalidateDraft();renderAttachments();status('Selected document removed');
+  });
+  $('cancel-document').addEventListener('click',()=>{
+    documentController?.abort();status('Cancelling document reading…');
+  });
+  async function loadAttachments(files){
+    if(!files.length||busy||!protectionEnabled)return;
+    if(documentLoading){status('Wait for document reading or cancel it before adding files.',true);return;}
+    const controller=new AbortController();documentController=controller;
+    invalidateDraft();documentLoading=true;
+    for(const id of ['speech-language','attach','record-voice','remove-attachment','attachment-select','extracted-text','send','protection-toggle'])$(id).disabled=true;
+    $('cancel-document').hidden=false;
+    $('attachment-info').hidden=false;resize();
+    try{
+      const added=await IncognixAttachments.readBatch(files,attachments,{
+        signal:controller.signal,draft:$('draft').value,
+        onProgress:(index,total,p)=>{if(controller===documentController&&!controller.signal.aborted)$('attachment-info').textContent=`Reading file ${index+1} of ${total} locally…${p===null?'':typeof p==='number'?' '+p+'%':' '+p}`;},
+        read:async(file,options)=>(await import('./read-attachment.mjs')).readAttachment(file,options)
+      });
+      controller.signal.throwIfAborted();
+      // The user may continue editing the prompt while extraction runs.
+      if(IncognixAttachments.compose($('draft').value,[...attachments,...added]).length>12000)throw Error('Prompt and attachments exceed 12,000 characters. Shorten your draft or documents.');
+      attachmentIndex=attachments.length;attachments.push(...added);renderAttachments();
+      $('attachment-review').open=true;status('Documents ready. Review extracted text before sharing.');return true;
+    }catch(e){
+      renderAttachments();status(controller.signal.aborted?'Reading cancelled. Existing attachments are unchanged.':'Document not attached: '+e.message+' Existing attachments are unchanged.',!controller.signal.aborted);
+    }finally{
+      if(controller===documentController){documentLoading=false;documentController=null;$('cancel-document').hidden=true;$('attachment-file').value='';markBusy(false);resize();}
+    }
+  }
+  let stopRecording=null;
+  $('record-voice').addEventListener('click',async()=>{
+    if(stopRecording){stopRecording();return;}
+    if(busy||documentLoading||!protectionEnabled)return;
+    const controller=new AbortController();documentController=controller;documentLoading=true;
+    invalidateDraft();for(const id of ['speech-language','attach','send','protection-toggle','remove-attachment','extracted-text','attachment-select'])$(id).disabled=true;
+    $('record-voice').disabled=true;$('cancel-document').hidden=false;$('cancel-document').textContent='Cancel recording';status('Allow the microphone to record locally.');
+    let file,recorderToken;
+    try{
+      const {recordVoice}=await import('./recording.mjs');
+      file=await recordVoice({signal:controller.signal,onReady:stop=>{stopRecording=stop;$('record-voice').disabled=false;$('record-voice').textContent='Stop recording';},onProgress:seconds=>status(`Recording locally · ${seconds}s / 240s`)});
+    }catch(e){
+      if(!controller.signal.aborted&&['NotAllowedError','SecurityError'].includes(e.name)){
+        let token;
+        try{
+          ({token}=await message({type:'OPEN_RECORDER'}));
+          status('Continue in the Incognix recording tab. Your private draft is retained.');
+          while(!controller.signal.aborted){
+            const result=await message({type:'POLL_RECORDER',token});
+            if(result.done){if(result.text){file=new File([result.text],'voice-transcript.txt',{type:'text/plain'});recorderToken=token;}else{await message({type:'ACK_RECORDER',token}).catch(()=>{});status('Recording cancelled. Your draft is retained.');}break;}
+            await new Promise(resolve=>setTimeout(resolve,750));
+          }
+        }catch(error){status('Could not complete recording: '+error.message,true);}
+        finally{if(token&&controller.signal.aborted)await message({type:'CANCEL_RECORDER',token}).catch(()=>{});}
+      }else status(controller.signal.aborted?'Recording cancelled.':`Recording unavailable: ${e.message} You can attach a recorded audio file.`,!controller.signal.aborted);
+    }
+    finally{stopRecording=null;documentController=null;documentLoading=false;$('record-voice').disabled=false;$('record-voice').textContent='Record voice';$('cancel-document').hidden=true;$('cancel-document').textContent='Cancel reading';markBusy(false);resize();}
+    if(file&&!controller.signal.aborted){const added=await loadAttachments([file]);if(added&&recorderToken)await message({type:'ACK_RECORDER',token:recorderToken}).catch(()=>{});else if(recorderToken)status('Transcript remains in the recording tab. Shorten it there, then copy it into your draft.',true);}
+  });
+  $('attachment-file').addEventListener('change',()=>loadAttachments([...$('attachment-file').files]));
+  const ingestFiles=(event,files)=>{
+    if(!files.length)return;
+    event.preventDefault();event.stopPropagation();loadAttachments(files);
+  };
+  $('composer').addEventListener('dragover',event=>{if([...event.dataTransfer.types].includes('Files')){event.preventDefault();event.dataTransfer.dropEffect='copy';}});
+  $('composer').addEventListener('drop',event=>ingestFiles(event,[...event.dataTransfer.files]));
+  $('draft').addEventListener('paste',event=>ingestFiles(event,[...(event.clipboardData?.files||[])]));
+  $('draft').addEventListener('input',()=>{analysisController?.abort();revision++;current=null;previewId=null;$('preview').hidden=true;$('permission').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});message({type:'SAVE_EDITOR',text:$('draft').value}).catch(()=>{});});
+  $('preview-cancel').addEventListener('click',()=>{if(busy)return;previewId=null;current=null;$('preview').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});resize();});
+  $('copy-reviewed').addEventListener('click',async()=>{
+    if(busy||!current||!previewId||$('preview').hidden)return;
+    try{await copyPrivateText($('outgoing').value);status('Reviewed text copied. Paste it into the chatbot; nothing was sent automatically.');}
+    catch{status('Clipboard unavailable. Select and copy the reviewed text above.',true);$('outgoing').focus();$('outgoing').select();}
+  });
+  $('confirm-send').addEventListener('click',async()=>{
+    if(busy||!current||!previewId)return;
+    markBusy(true);$('draft').readOnly=true;
+    try{
+      const result=await message({type:'PREPARE_AND_SEND',draftId:current.draft_id,previewId});
+      $('draft').value='';attachments=[];attachmentIndex=0;renderAttachments();fitDraft();await message({type:'SAVE_EDITOR',text:''});current=null;previewId=null;$('preview').hidden=true;
+      status('Sanitized prompt handed to the AI website');$('notice').textContent=`Protected ${result.replacements} field(s). Review the chat to confirm delivery.`;
+    }catch(e){status(e.message,true);showRecovery(e);}
+    finally{$('draft').readOnly=false;markBusy(false);resize();}
+  });
   $('send').addEventListener('click',doSend);
   $('protection-toggle').addEventListener('click',async()=>{
-    if(busy)return;
+    if(busy||documentLoading)return;
     $('protection-toggle').disabled=true;
     try{
       const next=!protectionEnabled;
@@ -183,7 +337,7 @@ async function initComposer(){
       if(!response?.ok)throw Error('Could not change protection state');
       // Leave any raw draft in the private extension textarea. Never copy it
       // into the website composer when the user turns protection off.
-      if(next){current=null;lastApprovedDecisions=null;$('permission').hidden=true;}
+      revision++;previewId=null;$('preview').hidden=true;message({type:'CANCEL_DRAFT'}).catch(()=>{});if(next){current=null;lastApprovedDecisions=null;$('permission').hidden=true;}
       updateProtectionUI(next);
     }catch(e){status(e.message,true);}
     finally{$('protection-toggle').disabled=false;resize();}
@@ -225,7 +379,7 @@ async function initComposer(){
     if(!confirm('Clear the private mapping for this chat? Restoring earlier placeholders will no longer work.'))return;
     try{await message({type:'CLEAR_SESSION'});status('Mappings cleared');}catch(e){status(e.message,true);}
   });
-  try{await message({type:'HEALTH'});
+  try{const saved=await message({type:'LOAD_EDITOR'});if(revision===0&&!$('draft').value)$('draft').value=saved.text||'';await message({type:'HEALTH'});
     const available=await LocalPrivacyAI.availability();
     if(available==='unavailable')status('On-device AI unavailable; sending blocked',true);
     else if(available==='downloadable'||available==='downloading')status('Local AI download may be needed on Send');
@@ -244,6 +398,8 @@ function syncResponseToggle(){
   toggle.textContent=expanded?'Show less':'Show more';
 }
 async function initResponse(){
+  let restoredCopy='';
+  $('copy-restored').addEventListener('click',async()=>{if(!responseReady)return;try{await copyPrivateText(restoredCopy);$('copy-status').textContent='Copied';}catch{$('copy-status').textContent='Copy unavailable. Select the restored text to copy it.';}});
   $('response').hidden=false;
   // Never add extension commentary or a shield heading to the assistant answer.
   $('response-label').hidden=true;
@@ -266,6 +422,7 @@ async function initResponse(){
       // website's own sanitized response rather than inject explanatory text.
       responseReady=!data.unresolved;
       const next=responseReady?data.text:'';
+      restoredCopy=next;$('copy-restored').hidden=!responseReady;$('copy-status').textContent='';
       // Gemini's answer is transferred as a *safe structural tree* so bullet
       // lists, paragraphs, headings, and code keep their intended formatting.
       // Never use innerHTML or render private values into the host site DOM.
@@ -286,7 +443,7 @@ async function initResponse(){
     }catch(e){
       // Fail without altering the displayed AI response.
       $('restored-text').textContent='';
-      responseReady=false;
+      responseReady=false;restoredCopy='';$('copy-restored').hidden=true;
       await resize();
     }finally{
       refreshing=false;
